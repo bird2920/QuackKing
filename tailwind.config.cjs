@@ -2,8 +2,9 @@
 module.exports = {
   content: [
     "./index.html",
-    "./TriviaGame.jsx",
     "./main.jsx",
+    "./LandingPage.jsx",
+    "./src/**/*.{js,ts,jsx,tsx}",
     "./*.{js,ts,jsx,tsx}",
   ],
   theme: {
