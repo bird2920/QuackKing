@@ -1,10 +1,16 @@
 // QuestionsEditor.jsx
 // Interactive editor for loaded trivia questions - edit text, answers, and options inline.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const QuestionsEditor = ({ questions = [], onSave, isHost }) => {
   const [editedQuestions, setEditedQuestions] = useState(questions);
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  // Sync with questions prop
+  useEffect(() => {
+    setEditedQuestions(questions);
+    setExpandedIndex(null);
+  }, [questions]);
 
   // Update a specific field in a question
   const updateQuestion = (index, field, value) => {

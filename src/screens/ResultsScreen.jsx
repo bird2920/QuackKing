@@ -3,7 +3,7 @@ import {
   getGameDocPath,
   getPlayersCollectionPath,
 } from "../helpers/firebasePaths";
-import { getDocs, deleteDoc } from "firebase/firestore";
+import { getDocs, deleteDoc, updateDoc } from "firebase/firestore";
 
 export default function ResultsScreen({
   db,
@@ -38,6 +38,37 @@ export default function ResultsScreen({
       setMode("HOME");
     } catch (e) {
       console.error("❌ Error ending game:", e);
+    }
+  };
+
+  // 🔄 Start New Round - keep players and questions
+  const handleNewRound = async () => {
+    if (!isHost || !db || !gameCode) return;
+
+    try {
+      // Reset all player scores and answers
+      const playersColRef = getPlayersCollectionPath(db, gameCode);
+      const playerDocs = await getDocs(playersColRef);
+      await Promise.all(
+        playerDocs.docs.map((d) =>
+          updateDoc(d.ref, {
+            score: 0,
+            lastAnswer: null,
+            answerTimestamp: null,
+          })
+        )
+      );
+
+      // Reset game state to lobby
+      const gameDocRef = getGameDocPath(db, gameCode);
+      await updateDoc(gameDocRef, {
+        status: "LOBBY",
+        currentQuestionIndex: 0,
+        currentQuestionStartTime: null,
+        answerRevealed: false,
+      });
+    } catch (e) {
+      console.error("❌ Error starting new round:", e);
     }
   };
 
@@ -90,12 +121,20 @@ export default function ResultsScreen({
 
       {/* 🧑‍✈️ Host Controls */}
       {isHost ? (
-        <button
-          onClick={handleEndGame}
-          className="mt-10 p-4 bg-red-600 text-white font-extrabold text-xl rounded-xl shadow-2xl hover:bg-red-700 transition transform hover:scale-[1.02] w-full max-w-md"
-        >
-          End Game and Close Room
-        </button>
+        <div className="mt-10 w-full max-w-md space-y-4">
+          <button
+            onClick={handleNewRound}
+            className="w-full p-4 bg-green-600 text-white font-extrabold text-xl rounded-xl shadow-2xl hover:bg-green-700 transition transform hover:scale-[1.02]"
+          >
+            🔄 New Round (Keep Players & Questions)
+          </button>
+          <button
+            onClick={handleEndGame}
+            className="w-full p-4 bg-red-600 text-white font-extrabold text-xl rounded-xl shadow-2xl hover:bg-red-700 transition transform hover:scale-[1.02]"
+          >
+            End Game and Close Room
+          </button>
+        </div>
       ) : (
         <p className="mt-10 text-lg text-gray-400 text-center">
           Waiting for host to close the room...
