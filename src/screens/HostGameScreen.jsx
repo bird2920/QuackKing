@@ -56,22 +56,28 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       console.error("❌ Error updating answerRevealed:", err);
     }
 
-    // Calculate scores for correct answers
+    // Calculate scores for correct answers & increment stats
     try {
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
 
       const updates = playerDocs.docs.map(async (docSnap) => {
         const playerData = docSnap.data();
-        if (playerData.lastAnswer === currentQuestion.correctAnswer) {
-          // Time-based scoring
-          const timeElapsed = (playerData.answerTimestamp || Date.now()) - lobbyState.currentQuestionStartTime;
-          const speedBonus = Math.max(0, 30000 - timeElapsed) / 1000; // 30s max
-          const pointsEarned = 100 + Math.floor(speedBonus * 10); // 100 base + up to 300 bonus
-
-          await updateDoc(docSnap.ref, {
-            score: (playerData.score || 0) + pointsEarned,
-          });
+        const answered = playerData.lastAnswer != null;
+        const correct = playerData.lastAnswer === currentQuestion.correctAnswer;
+        if (answered) {
+          const updatesObj = {
+            answeredCount: (playerData.answeredCount || 0) + 1,
+            correctCount: (playerData.correctCount || 0) + (correct ? 1 : 0),
+          };
+          if (correct) {
+            // Time-based scoring
+            const timeElapsed = (playerData.answerTimestamp || Date.now()) - lobbyState.currentQuestionStartTime;
+            const speedBonus = Math.max(0, 30000 - timeElapsed) / 1000; // 30s max
+            const pointsEarned = 100 + Math.floor(speedBonus * 10); // 100 base + up to 300 bonus
+            updatesObj.score = (playerData.score || 0) + pointsEarned;
+          }
+          await updateDoc(docSnap.ref, updatesObj);
         }
       });
 
