@@ -8,14 +8,23 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
   useEffect(() => nameInputRef.current?.focus(), []);
 
   const handleJoin = () => {
-    if (!screenName.trim()) return setError("Please enter your name.");
-    if (code.trim().length !== 4) return setError("Enter a valid 4-letter game code.");
+    if (!screenName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (code.trim().length !== 4) {
+      setError("Enter a valid 4-letter game code.");
+      return;
+    }
     setError("");
     onJoin(code.toUpperCase());
   };
 
   const handleCreate = () => {
-    if (!screenName.trim()) return setError("Please enter your name.");
+    if (!screenName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
     setError("");
     onCreate();
   };
@@ -30,9 +39,12 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
         ref={nameInputRef}
         type="text"
         value={screenName}
-        onChange={(e) => setScreenName(e.target.value.slice(0, 15))}
+        onChange={e => {
+          setScreenName(e.target.value.slice(0, 15));
+          if (error && e.target.value.trim()) setError("");
+        }}
         placeholder="Max 15 characters"
-        className="w-full p-3 border rounded-lg mb-4 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full p-3 border rounded-lg mb-1 focus:ring-indigo-500 focus:border-indigo-500"
       />
 
       <div className="flex gap-3 mb-3">
@@ -49,6 +61,24 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
         />
         <button
           onClick={handleJoin}
+          onMouseDown={e => {
+            if (!screenName.trim()) {
+              setError("Please enter your name.");
+              e.preventDefault();
+            } else if (code.length !== 4) {
+              setError("Enter a valid 4-letter game code.");
+              e.preventDefault();
+            }
+          }}
+          onPointerDown={e => {
+            if (!screenName.trim()) {
+              setError("Please enter your name.");
+              e.preventDefault();
+            } else if (code.length !== 4) {
+              setError("Enter a valid 4-letter game code.");
+              e.preventDefault();
+            }
+          }}
           disabled={!screenName.trim() || code.length !== 4}
           className="p-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50"
         >
@@ -59,6 +89,18 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
       <div className="text-center text-gray-500 my-2">— OR —</div>
       <button
         onClick={handleCreate}
+        onMouseDown={e => {
+          if (!screenName.trim()) {
+            setError("Please enter your name.");
+            e.preventDefault();
+          }
+        }}
+        onPointerDown={e => {
+          if (!screenName.trim()) {
+            setError("Please enter your name.");
+            e.preventDefault();
+          }
+        }}
         disabled={!screenName.trim()}
         className="w-full p-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 disabled:opacity-50"
       >
