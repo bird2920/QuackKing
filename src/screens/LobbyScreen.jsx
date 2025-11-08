@@ -232,6 +232,46 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                   </p>
                 )}
                 <button
+                  onClick={async () => {
+                    if (!isHost || !db || !lobbyState) return;
+                    if (lobbyState.questions.length === 0) {
+                      setError("You must upload or generate questions first.");
+                      return;
+                    }
+                    try {
+                      const gameDocRef = getGameDocPath(db, gameCode);
+                      // Reset player answers and scores
+                      const playersColRef = getPlayersCollectionPath(db, gameCode);
+                      const playerDocs = await getDocs(playersColRef);
+                      await Promise.all(
+                        playerDocs.docs.map((docSnap) =>
+                          updateDoc(docSnap.ref, {
+                            lastAnswer: null,
+                            score: 0,
+                            answerTimestamp: null,
+                          })
+                        )
+                      );
+                      // Start game in testMode
+                      await updateDoc(gameDocRef, {
+                        status: "PLAYING",
+                        currentQuestionIndex: 0,
+                        currentQuestionStartTime: Date.now(),
+                      });
+                      if (typeof window.setTestMode === "function") {
+                        window.setTestMode(true);
+                      }
+                    } catch (e) {
+                      console.error("❌ Error starting test mode:", e);
+                      setError(`Failed to start test mode: ${e.message}`);
+                    }
+                  }}
+                  disabled={questionCount === 0}
+                  className="w-full mt-2 p-4 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-900 transition disabled:opacity-50"
+                >
+                  Test Alone ({questionCount} Qs)
+                </button>
+                <button
                   onClick={() => {
                     const inviteUrl = `${window.location.origin}/#/game/${gameCode}`;
                     navigator.clipboard

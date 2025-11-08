@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
 import { updateDoc, getDocs } from "firebase/firestore";
 
-export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
+export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId, testMode, setTestMode }) {
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [playersWhoAnswered, setPlayersWhoAnswered] = useState(new Set());
@@ -242,6 +242,12 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
             Next Question →
           </button>
         )}
+        <button
+          onClick={() => setTestMode && setTestMode(true)}
+          className="w-full p-4 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-900 mt-2"
+        >
+          Test Alone
+        </button>
       </div>
     </div>
   );
