@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
 import { parseCSV } from "../helpers/questionUtils";
-import { callAIApi, QUESTION_SCHEMA } from "../helpers/geminiService";
+import { requestAiQuestions, getAIStatus } from "../helpers/aiClient";
 import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
 
@@ -18,7 +18,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const editorRef = useRef(null);
 
   const questionCount = lobbyState?.questions?.length || 0;
-  const hasAIKey = typeof window.AI_PROVIDER === "string" && window.AI_PROVIDER.trim() !== "";
+  const aiStatus = useMemo(() => getAIStatus(), []);
+  const aiEnabled = aiStatus.isEnabled;
+  const aiUnavailableMessage = useMemo(() => {
+    if (aiEnabled) return "";
+    switch (aiStatus.reason) {
+      case "missing-configuration":
+        return "Add a Gemini API key or AI proxy URL to enable automatic question generation.";
+      default:
+        return "AI question generator is currently unavailable. You can still upload CSV questions.";
+    }
+  }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
   const topicSuggestions = useMemo(
@@ -109,34 +119,36 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   // 🤖 AI Generate Questions
   const handleGenerateQuestions = useCallback(async () => {
     if (!db || !gameCode || !isHost || !generatorTopic.trim()) return;
+    if (!aiEnabled) {
+      setError(aiUnavailableMessage || "AI generator unavailable. Please upload questions manually.");
+      return;
+    }
 
     setIsGenerating(true);
     setError("");
 
-    const systemPrompt =
-      "You are a trivia generator. Produce 5 multiple-choice questions for the given topic. Each must have 1 correct answer and 3 plausible distractors. Return valid JSON as an array of objects with fields: question, correctAnswer, distractor1, distractor2, distractor3.";
-    const userQuery = `Generate 5 trivia questions about "${generatorTopic.trim()}".`;
-
     try {
-      const jsonString = await callAIApi(userQuery, systemPrompt);
-      const parsed = JSON.parse(jsonString);
-      const generated = Array.isArray(parsed) ? parsed : parsed.questions || [];
+      const aiQuestions = await requestAiQuestions(generatorTopic.trim());
+      if (!aiQuestions.length) {
+        throw new Error("AI returned empty response.");
+      }
 
-      if (!Array.isArray(generated) || generated.length === 0)
-        throw new Error("Invalid or empty response from AI.");
-
-      const formatted = generated
+      const timestamp = Date.now();
+      const formatted = aiQuestions
         .map((q, i) => {
-          const options = [q.correctAnswer, q.distractor1, q.distractor2, q.distractor3].filter(Boolean);
-          if (options.length !== 4) return null;
+          if (!q.options || q.options.length !== 4) return null;
           return {
-            id: `ai-${i}`,
+            id: `ai-${timestamp}-${i}`,
             question: q.question,
             correctAnswer: q.correctAnswer,
-            options: shuffle(options),
+            options: shuffle([...q.options]),
           };
         })
         .filter(Boolean);
+
+      if (formatted.length === 0) {
+        throw new Error("AI did not provide any usable questions.");
+      }
 
       const gameDocRef = getGameDocPath(db, gameCode);
       await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
@@ -149,11 +161,15 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       }, 150);
     } catch (e) {
       console.error("AI generation failed:", e);
-      setError(`Failed to generate questions: ${e.message}`);
+      const friendlyMessage =
+        e.code === "AI_DISABLED"
+          ? "AI generator is disabled. Upload CSV questions instead."
+          : `Failed to generate questions: ${e.message}`;
+      setError(friendlyMessage);
     } finally {
       setIsGenerating(false);
     }
-  }, [db, gameCode, isHost, generatorTopic]);
+  }, [aiEnabled, aiUnavailableMessage, db, gameCode, generatorTopic, isHost]);
 
   // 🔀 Simple shuffle
   const shuffle = (array) => array.sort(() => Math.random() - 0.5);
@@ -212,8 +228,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
 
           {isHost ? (
             <div className="space-y-5">
-              {/* ✨ AI Generator - Only show if API key is configured */}
-              {hasAIKey && (
+              {/* ✨ AI Generator */}
+              {aiEnabled ? (
                 <div className="bg-purple-700 p-4 rounded-lg shadow-inner">
                   <h4 className="text-lg font-bold text-yellow-300 mb-1">
                     AI Question Generator
@@ -224,7 +240,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                   <input
                     type="text"
                     value={generatorTopic}
-                    onChange={e => setGeneratorTopic(e.target.value)}
+                    onChange={(e) => setGeneratorTopic(e.target.value)}
                     disabled={isGenerating}
                     className="w-full p-2 mb-2 bg-purple-600 border border-purple-500 rounded-lg text-white placeholder-gray-300"
                     placeholder="e.g., Space Exploration, The 90s, Food"
@@ -236,6 +252,13 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                   >
                     {isGenerating ? "Generating..." : "Generate Questions for Theme"}
                   </button>
+                </div>
+              ) : (
+                <div className="bg-gray-900/40 p-4 rounded-lg border border-purple-600">
+                  <h4 className="text-lg font-bold text-white mb-1">AI Generator Disabled</h4>
+                  <p className="text-sm text-gray-300">
+                    {aiUnavailableMessage}
+                  </p>
                 </div>
               )}
 
@@ -276,7 +299,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
               </div>
 
               {/* 📄 CSV Upload */}
-              <div className={hasAIKey ? "border-t border-purple-600 pt-4" : ""}>
+              <div className={aiEnabled ? "border-t border-purple-600 pt-4" : ""}>
                 <h4 className="text-lg font-bold mb-2">Manual CSV Upload</h4>
                 <textarea
                   value={csvText}

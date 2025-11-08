@@ -1,6 +1,12 @@
 const GEMINI_API_URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
 const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
-const GEMINI_API_KEY = ""; // injected by environment
+const ENV = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
+const RUNTIME_KEY =
+  (typeof window !== "undefined" && window.GEMINI_API_KEY) ||
+  (typeof globalThis !== "undefined" && globalThis.GEMINI_API_KEY) ||
+  ENV.VITE_GEMINI_API_KEY ||
+  "";
+const GEMINI_API_KEY = RUNTIME_KEY;
 
 export const QUESTION_SCHEMA = {
   type: "ARRAY",
@@ -18,7 +24,21 @@ export const QUESTION_SCHEMA = {
   },
 };
 
+export function getGeminiConfig() {
+  return {
+    hasKey: Boolean(GEMINI_API_KEY),
+    model: MODEL_NAME,
+    apiBase: GEMINI_API_URL_BASE,
+  };
+}
+
 export async function callGeminiApi(payload, model = MODEL_NAME, retries = 3) {
+  if (!GEMINI_API_KEY) {
+    const error = new Error("Gemini API key missing");
+    error.code = "GEMINI_API_KEY_MISSING";
+    throw error;
+  }
+
   const url = `${GEMINI_API_URL_BASE}${model}:generateContent?key=${GEMINI_API_KEY}`;
 
   for (let i = 0; i < retries; i++) {
@@ -47,10 +67,9 @@ export async function callAIApi(userQuery, systemPrompt) {
 
   const payload = {
     contents: [
-      ...(systemPrompt
-        ? [{ role: "system", parts: [{ text: systemPrompt }]}]
-        : []),
-      { role: "user", parts: [{ text: userQuery }]}],
+      ...(systemPrompt ? [{ role: "system", parts: [{ text: systemPrompt }] }] : []),
+      { role: "user", parts: [{ text: userQuery }] },
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: QUESTION_SCHEMA,
