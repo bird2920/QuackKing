@@ -1,32 +1,110 @@
 import React, { useState, useEffect, useRef } from "react";
 
+const CODE_LENGTH = 4;
+const sanitizeCode = (value = "") =>
+  value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, CODE_LENGTH);
+const toDigitArray = (value = "") =>
+  Array.from({ length: CODE_LENGTH }, (_, idx) => value[idx] || "");
+
 export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName, prefilledCode }) {
-  const [code, setCode] = useState(prefilledCode || "");
+  const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
   const nameInputRef = useRef(null);
+  const codeInputRefs = useRef([]);
+
+  const isPrefilled = Boolean(prefilledCode);
+  const codeValue = codeDigits.join("");
 
   useEffect(() => nameInputRef.current?.focus(), []);
 
+  useEffect(() => {
+    if (!prefilledCode) return;
+    setCodeDigits(toDigitArray(sanitizeCode(prefilledCode)));
+  }, [prefilledCode]);
+
   const handleJoin = () => {
-    if (!screenName.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
-    if (code.trim().length !== 4) {
-      setError("Enter a valid 4-letter game code.");
-      return;
-    }
+    if (!screenName.trim()) return setError("Please enter your name.");
+    if (codeDigits.some((digit) => !digit)) return setError("Enter a valid 4-letter game code.");
     setError("");
-    onJoin(code.toUpperCase());
+    onJoin(codeValue);
   };
 
   const handleCreate = () => {
-    if (!screenName.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
+    if (!screenName.trim()) return setError("Please enter your name.");
     setError("");
     onCreate();
+  };
+
+  const focusInput = (index) => {
+    codeInputRefs.current[index]?.focus();
+  };
+
+  const insertCharacters = (startIndex, value) => {
+    if (!value) return startIndex;
+    let cursor = startIndex;
+    setCodeDigits((prev) => {
+      const next = [...prev];
+      value.split("").forEach((char) => {
+        if (cursor >= CODE_LENGTH) return;
+        next[cursor] = char;
+        cursor += 1;
+      });
+      return next;
+    });
+    return cursor;
+  };
+
+  const handleDigitChange = (index, rawValue) => {
+    if (isPrefilled) return;
+    const sanitized = sanitizeCode(rawValue);
+    if (!sanitized) {
+      setCodeDigits((prev) => {
+        const next = [...prev];
+        next[index] = "";
+        return next;
+      });
+      return;
+    }
+
+    const nextIndex = insertCharacters(index, sanitized);
+    if (nextIndex < CODE_LENGTH) focusInput(nextIndex);
+  };
+
+  const handlePaste = (event, index) => {
+    if (isPrefilled) return;
+    const pasted = sanitizeCode(event.clipboardData.getData("text"));
+    if (!pasted) return;
+    event.preventDefault();
+    const nextIndex = insertCharacters(index, pasted);
+    if (nextIndex < CODE_LENGTH) focusInput(nextIndex);
+  };
+
+  const handleKeyDown = (event, index) => {
+    if (isPrefilled) return;
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      setCodeDigits((prev) => {
+        const next = [...prev];
+        if (next[index]) {
+          next[index] = "";
+        } else if (index > 0) {
+          next[index - 1] = "";
+        }
+        return next;
+      });
+      if (!codeDigits[index] && index > 0) {
+        focusInput(index - 1);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowLeft" && index > 0) {
+      event.preventDefault();
+      focusInput(index - 1);
+    } else if (event.key === "ArrowRight" && index < CODE_LENGTH - 1) {
+      event.preventDefault();
+      focusInput(index + 1);
+    }
   };
 
   return (
@@ -39,47 +117,36 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
         ref={nameInputRef}
         type="text"
         value={screenName}
-        onChange={e => {
-          setScreenName(e.target.value.slice(0, 15));
-          if (error && e.target.value.trim()) setError("");
-        }}
+        onChange={(e) => setScreenName(e.target.value.slice(0, 15))}
         placeholder="Max 15 characters"
-        className="w-full p-3 border rounded-lg mb-1 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full p-3 border rounded-lg mb-4 focus:ring-indigo-500 focus:border-indigo-500"
       />
 
-      <div className="flex gap-3 mb-3">
-        <input
-          type="text"
-          value={code}
-          onChange={(e) => !prefilledCode && setCode(e.target.value.toUpperCase().slice(0, 4))}
-          placeholder="CODE"
-          maxLength="4"
-          disabled={!!prefilledCode}
-          className={`flex-grow p-3 border-4 rounded-xl text-center text-xl font-bold tracking-widest uppercase ${
-            prefilledCode ? "bg-gray-200 border-green-400 text-green-700" : "border-indigo-300"
-          }`}
-        />
+      <div className="flex flex-col gap-3 mb-3">
+        <div className="flex justify-between gap-2">
+          {codeDigits.map((digit, index) => (
+            <input
+              key={index}
+              type="text"
+              inputMode="text"
+              maxLength={1}
+              value={digit}
+              disabled={isPrefilled}
+              onChange={(e) => handleDigitChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              onPaste={(e) => handlePaste(e, index)}
+              onFocus={(e) => e.target.select()}
+              ref={(el) => (codeInputRefs.current[index] = el)}
+              className={`w-16 h-16 text-center text-2xl font-black uppercase rounded-2xl border-4 focus:outline-none focus:ring-2 transition ${
+                isPrefilled ? "bg-gray-200 border-green-400 text-green-700" : "border-indigo-300 text-gray-900"
+              }`}
+              aria-label={`Game code character ${index + 1}`}
+            />
+          ))}
+        </div>
         <button
           onClick={handleJoin}
-          onMouseDown={e => {
-            if (!screenName.trim()) {
-              setError("Please enter your name.");
-              e.preventDefault();
-            } else if (code.length !== 4) {
-              setError("Enter a valid 4-letter game code.");
-              e.preventDefault();
-            }
-          }}
-          onPointerDown={e => {
-            if (!screenName.trim()) {
-              setError("Please enter your name.");
-              e.preventDefault();
-            } else if (code.length !== 4) {
-              setError("Enter a valid 4-letter game code.");
-              e.preventDefault();
-            }
-          }}
-          disabled={!screenName.trim() || code.length !== 4}
+          disabled={!screenName.trim() || codeDigits.some((digit) => !digit)}
           className="p-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50"
         >
           Join
@@ -89,18 +156,6 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
       <div className="text-center text-gray-500 my-2">— OR —</div>
       <button
         onClick={handleCreate}
-        onMouseDown={e => {
-          if (!screenName.trim()) {
-            setError("Please enter your name.");
-            e.preventDefault();
-          }
-        }}
-        onPointerDown={e => {
-          if (!screenName.trim()) {
-            setError("Please enter your name.");
-            e.preventDefault();
-          }
-        }}
         disabled={!screenName.trim()}
         className="w-full p-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 disabled:opacity-50"
       >

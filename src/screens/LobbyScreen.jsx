@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from "react";
-import { getGameDocPath, getPlayersCollectionPath } from "../helpers/firebasePaths";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
 import { parseCSV } from "../helpers/questionUtils";
-import { callGeminiApi, QUESTION_SCHEMA } from "../helpers/geminiService";
-import { updateDoc, getDocs } from "firebase/firestore";
+import { callAIApi, QUESTION_SCHEMA } from "../helpers/geminiService";
+import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
 
 // Lobby screen allows host to upload or generate questions and start game.
@@ -11,9 +11,33 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [generatorTopic, setGeneratorTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [topicInput, setTopicInput] = useState("");
+  const [topicStatus, setTopicStatus] = useState("idle");
+  const [topicMessage, setTopicMessage] = useState("");
+  // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
+  const editorRef = useRef(null);
 
   const questionCount = lobbyState?.questions?.length || 0;
-  const hasGeminiKey = typeof window.GEMINI_API_KEY === "string" && window.GEMINI_API_KEY.trim() !== "";
+  const hasAIKey = typeof window.AI_PROVIDER === "string" && window.AI_PROVIDER.trim() !== "";
+  const playerRecord = players.find((p) => p.id === userId);
+  const playerSuggestion = playerRecord?.topicSuggestion || "";
+  const topicSuggestions = useMemo(
+    () =>
+      players
+        .filter((p) => !p.isHost && p.topicSuggestion)
+        .map((p) => ({
+          name: p.name,
+          suggestion: p.topicSuggestion,
+          timestamp: p.topicSuggestionTimestamp || 0,
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp),
+    [players]
+  );
+  const suggestionIdeas = ["World Capitals", "90s Cartoons", "Space Race", "Food Trivia", "Pop Culture", "Video Games"];
+
+  useEffect(() => {
+    setTopicInput(playerSuggestion);
+  }, [playerSuggestion]);
 
   // 🏁 Start Game (host only)
   const handleStartGame = useCallback(async () => {
@@ -30,15 +54,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       // Reset player answers and scores
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
-      await Promise.all(
-        playerDocs.docs.map((docSnap) =>
-          updateDoc(docSnap.ref, {
+      if (!playerDocs.empty) {
+        const batch = writeBatch(db);
+        playerDocs.docs.forEach((docSnap) =>
+          batch.update(docSnap.ref, {
             lastAnswer: null,
             score: 0,
             answerTimestamp: null,
           })
-        )
-      );
+        );
+        await batch.commit();
+      }
 
       // Start game
       await updateDoc(gameDocRef, {
@@ -68,6 +94,12 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         questions,
         status: "UPLOAD",
       });
+      // Defer scroll slightly to allow React + Firestore snapshot to render editor
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 150);
     } catch (e) {
       console.error("Error saving questions:", e);
       setError(`Upload failed: ${e.message}`);
@@ -82,31 +114,23 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
     setError("");
 
     const systemPrompt =
-      "You are a trivia generator. Produce 5 multiple-choice questions for the given topic. Each must have 1 correct answer and 3 plausible distractors. Return valid JSON matching the schema.";
+      "You are a trivia generator. Produce 5 multiple-choice questions for the given topic. Each must have 1 correct answer and 3 plausible distractors. Return valid JSON as an array of objects with fields: question, correctAnswer, distractor1, distractor2, distractor3.";
     const userQuery = `Generate 5 trivia questions about "${generatorTopic.trim()}".`;
 
-    const payload = {
-      contents: [{ parts: [{ text: userQuery }] }],
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: QUESTION_SCHEMA,
-      },
-    };
-
     try {
-      const jsonString = await callGeminiApi(payload);
-      const generated = JSON.parse(jsonString);
+      const jsonString = await callAIApi(userQuery, systemPrompt);
+      const parsed = JSON.parse(jsonString);
+      const generated = Array.isArray(parsed) ? parsed : parsed.questions || [];
 
       if (!Array.isArray(generated) || generated.length === 0)
-        throw new Error("Invalid or empty response from Gemini.");
+        throw new Error("Invalid or empty response from AI.");
 
       const formatted = generated
         .map((q, i) => {
           const options = [q.correctAnswer, q.distractor1, q.distractor2, q.distractor3].filter(Boolean);
           if (options.length !== 4) return null;
           return {
-            id: `llm-${i}`,
+            id: `ai-${i}`,
             question: q.question,
             correctAnswer: q.correctAnswer,
             options: shuffle(options),
@@ -118,8 +142,13 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
       setCsvText("");
       setGeneratorTopic("");
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 150);
     } catch (e) {
-      console.error("Gemini generation failed:", e);
+      console.error("AI generation failed:", e);
       setError(`Failed to generate questions: ${e.message}`);
     } finally {
       setIsGenerating(false);
@@ -128,6 +157,26 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
 
   // 🔀 Simple shuffle
   const shuffle = (array) => array.sort(() => Math.random() - 0.5);
+
+  // 💡 Player topic suggestion
+  const handleSubmitSuggestion = useCallback(async () => {
+    if (isHost || !db || !userId || !gameCode || !topicInput.trim()) return;
+    setTopicStatus("saving");
+    setTopicMessage("");
+    try {
+      const playerDocRef = getPlayerDocPath(db, gameCode, userId);
+      await updateDoc(playerDocRef, {
+        topicSuggestion: topicInput.trim(),
+        topicSuggestionTimestamp: Date.now(),
+      });
+      setTopicStatus("success");
+      setTopicMessage("Sent! Host can see your idea.");
+    } catch (e) {
+      console.error("❌ Error saving topic suggestion:", e);
+      setTopicStatus("error");
+      setTopicMessage("Couldn't send that. Please try again.");
+    }
+  }, [db, gameCode, isHost, topicInput, userId]);
 
   // 💾 Save edited questions from QuestionsEditor
   const handleSaveQuestions = useCallback(async (updatedQuestions) => {
@@ -161,21 +210,21 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
             {isHost ? "Host Controls" : "Waiting for Host..."}
           </h3>
 
-          {isHost && (
+          {isHost ? (
             <div className="space-y-5">
               {/* ✨ AI Generator - Only show if API key is configured */}
-              {hasGeminiKey && (
+              {hasAIKey && (
                 <div className="bg-purple-700 p-4 rounded-lg shadow-inner">
                   <h4 className="text-lg font-bold text-yellow-300 mb-1">
                     AI Question Generator
                   </h4>
                   <p className="text-xs text-gray-200 mb-2">
-                    Enter a topic and auto-generate trivia.
+                    Enter a theme and generate 5 multiple-choice questions.
                   </p>
                   <input
                     type="text"
                     value={generatorTopic}
-                    onChange={(e) => setGeneratorTopic(e.target.value)}
+                    onChange={e => setGeneratorTopic(e.target.value)}
                     disabled={isGenerating}
                     className="w-full p-2 mb-2 bg-purple-600 border border-purple-500 rounded-lg text-white placeholder-gray-300"
                     placeholder="e.g., Space Exploration, The 90s, Food"
@@ -185,13 +234,49 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                     disabled={!generatorTopic.trim() || isGenerating}
                     className="w-full p-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50"
                   >
-                    {isGenerating ? "Generating..." : "Generate 5 Questions"}
+                    {isGenerating ? "Generating..." : "Generate Questions for Theme"}
                   </button>
                 </div>
               )}
 
+              <div className="bg-gray-900/40 rounded-lg p-4 border border-purple-600">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-bold text-white">Player Suggestions</h4>
+                  <span className="text-xs text-gray-400">
+                    {topicSuggestions.length} idea{topicSuggestions.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                {topicSuggestions.length === 0 ? (
+                  <p className="text-sm text-gray-400">
+                    Encourage players to suggest a theme! Suggestions will appear here.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {topicSuggestions.map((suggestion, idx) => (
+                      <div
+                        key={`${suggestion.suggestion}-${suggestion.timestamp}-${idx}`}
+                        className="flex items-center justify-between gap-3 bg-gray-800/80 rounded-xl px-3 py-2"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-400">{suggestion.name}</span>
+                          <span className="text-base font-semibold text-white truncate">
+                            {suggestion.suggestion}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setGeneratorTopic(suggestion.suggestion)}
+                          className="text-xs font-bold px-3 py-1 rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-400"
+                        >
+                          Use Theme
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* 📄 CSV Upload */}
-              <div className={hasGeminiKey ? "border-t border-purple-600 pt-4" : ""}>
+              <div className={hasAIKey ? "border-t border-purple-600 pt-4" : ""}>
                 <h4 className="text-lg font-bold mb-2">Manual CSV Upload</h4>
                 <textarea
                   value={csvText}
@@ -243,15 +328,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                       // Reset player answers and scores
                       const playersColRef = getPlayersCollectionPath(db, gameCode);
                       const playerDocs = await getDocs(playersColRef);
-                      await Promise.all(
-                        playerDocs.docs.map((docSnap) =>
-                          updateDoc(docSnap.ref, {
+                      if (!playerDocs.empty) {
+                        const batch = writeBatch(db);
+                        playerDocs.docs.forEach((docSnap) =>
+                          batch.update(docSnap.ref, {
                             lastAnswer: null,
                             score: 0,
                             answerTimestamp: null,
                           })
-                        )
-                      );
+                        );
+                        await batch.commit();
+                      }
                       // Start game in testMode
                       await updateDoc(gameDocRef, {
                         status: "PLAYING",
@@ -283,6 +370,58 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                 >
                   Copy Invite Link
                 </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="bg-gray-900/40 border border-gray-700 rounded-xl p-4 shadow-inner">
+                <h4 className="text-lg font-bold text-white mb-1">Suggest a Trivia Theme</h4>
+                <p className="text-sm text-gray-300 mb-3">
+                  Help the host pick questions by sharing a topic idea. They&rsquo;ll see it instantly.
+                </p>
+                <input
+                  type="text"
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value.slice(0, 40))}
+                  placeholder="e.g., World Capitals, 90s Throwbacks..."
+                  className="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 mb-3"
+                  disabled={topicStatus === "saving"}
+                />
+                <button
+                  onClick={handleSubmitSuggestion}
+                  disabled={!topicInput.trim() || topicStatus === "saving"}
+                  className="w-full p-3 rounded-lg bg-yellow-500 text-gray-900 font-bold hover:bg-yellow-400 disabled:opacity-50"
+                >
+                  {topicStatus === "saving" ? "Sending..." : "Send to Host"}
+                </button>
+                {topicMessage && (
+                  <p
+                    className={`mt-2 text-sm ${
+                      topicStatus === "error" ? "text-red-300" : "text-green-300"
+                    }`}
+                  >
+                    {topicMessage}
+                  </p>
+                )}
+                <div className="mt-3">
+                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Quick ideas</p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestionIdeas.map((idea) => (
+                      <button
+                        key={idea}
+                        onClick={() => setTopicInput(idea)}
+                        className="px-3 py-1 text-xs rounded-full bg-gray-800 text-gray-200 border border-gray-700 hover:border-yellow-400"
+                      >
+                        {idea}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-900/20 rounded-xl p-4 border border-gray-800">
+                <p className="text-sm text-gray-300">
+                  Host is getting the questions ready. Hang tight, share a suggestion above, or hype up your friends!
+                </p>
               </div>
             </div>
           )}
@@ -327,11 +466,13 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
 
       {/* 📝 Questions Editor - shown after questions are loaded */}
       {isHost && questionCount > 0 && (
-        <QuestionsEditor
-          questions={lobbyState.questions}
-          onSave={handleSaveQuestions}
-          isHost={isHost}
-        />
+        <div ref={editorRef} className="w-full">
+          <QuestionsEditor
+            questions={lobbyState.questions}
+            onSave={handleSaveQuestions}
+            isHost={isHost}
+          />
+        </div>
       )}
 
       <p className="mt-8 text-xs text-gray-500 text-center break-all">
