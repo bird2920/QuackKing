@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
-import { updateDoc, getDocs } from "firebase/firestore";
+import { getGameDocPath, getPlayersCollectionPath } from "../helpers/firebasePaths";
+import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
 
-export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId, testMode, setTestMode }) {
+export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [playersWhoAnswered, setPlayersWhoAnswered] = useState(new Set());
@@ -60,28 +60,29 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     try {
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
-
-      const updates = playerDocs.docs.map(async (docSnap) => {
-        const playerData = docSnap.data();
-        const answered = playerData.lastAnswer != null;
-        const correct = playerData.lastAnswer === currentQuestion.correctAnswer;
-        if (answered) {
-          const updatesObj = {
-            answeredCount: (playerData.answeredCount || 0) + 1,
-            correctCount: (playerData.correctCount || 0) + (correct ? 1 : 0),
-          };
-          if (correct) {
-            // Time-based scoring
-            const timeElapsed = (playerData.answerTimestamp || Date.now()) - lobbyState.currentQuestionStartTime;
-            const speedBonus = Math.max(0, 30000 - timeElapsed) / 1000; // 30s max
-            const pointsEarned = 100 + Math.floor(speedBonus * 10); // 100 base + up to 300 bonus
-            updatesObj.score = (playerData.score || 0) + pointsEarned;
+      if (!playerDocs.empty) {
+        const batch = writeBatch(db);
+        playerDocs.docs.forEach((docSnap) => {
+          const playerData = docSnap.data();
+          const answered = playerData.lastAnswer != null;
+          const correct = playerData.lastAnswer === currentQuestion.correctAnswer;
+          if (answered) {
+            const updatesObj = {
+              answeredCount: (playerData.answeredCount || 0) + 1,
+              correctCount: (playerData.correctCount || 0) + (correct ? 1 : 0),
+            };
+            if (correct) {
+              // Time-based scoring
+              const timeElapsed = (playerData.answerTimestamp || Date.now()) - lobbyState.currentQuestionStartTime;
+              const speedBonus = Math.max(0, 30000 - timeElapsed) / 1000; // 30s max
+              const pointsEarned = 100 + Math.floor(speedBonus * 10); // 100 base + up to 300 bonus
+              updatesObj.score = (playerData.score || 0) + pointsEarned;
+            }
+            batch.update(docSnap.ref, updatesObj);
           }
-          await updateDoc(docSnap.ref, updatesObj);
-        }
-      });
-
-      await Promise.all(updates);
+        });
+        await batch.commit();
+      }
     } catch (err) {
       console.error("❌ Error calculating scores:", err);
     }
@@ -97,14 +98,16 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       // Reset player answers
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
-      await Promise.all(
-        playerDocs.docs.map((d) =>
-          updateDoc(d.ref, {
+      if (!playerDocs.empty) {
+        const batch = writeBatch(db);
+        playerDocs.docs.forEach((docSnap) =>
+          batch.update(docSnap.ref, {
             lastAnswer: null,
             answerTimestamp: null,
           })
-        )
-      );
+        );
+        await batch.commit();
+      }
 
       // Move to next question
       await updateDoc(gameDocRef, {
@@ -242,12 +245,6 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
             Next Question →
           </button>
         )}
-        <button
-          onClick={() => setTestMode && setTestMode(true)}
-          className="w-full p-4 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-900 mt-2"
-        >
-          Test Alone
-        </button>
       </div>
     </div>
   );

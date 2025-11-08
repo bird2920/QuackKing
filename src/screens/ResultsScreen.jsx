@@ -3,7 +3,7 @@ import {
   getGameDocPath,
   getPlayersCollectionPath,
 } from "../helpers/firebasePaths";
-import { getDocs, deleteDoc, updateDoc } from "firebase/firestore";
+import { getDocs, deleteDoc, updateDoc, writeBatch } from "firebase/firestore";
 
 export default function ResultsScreen({
   db,
@@ -49,17 +49,19 @@ export default function ResultsScreen({
       // Reset all player scores and answers
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
-      await Promise.all(
-        playerDocs.docs.map((d) =>
-          updateDoc(d.ref, {
+      if (!playerDocs.empty) {
+        const batch = writeBatch(db);
+        playerDocs.docs.forEach((docSnap) =>
+          batch.update(docSnap.ref, {
             score: 0,
             lastAnswer: null,
             answerTimestamp: null,
             correctCount: 0,
             answeredCount: 0,
           })
-        )
-      );
+        );
+        await batch.commit();
+      }
 
       // Reset game state to lobby
       const gameDocRef = getGameDocPath(db, gameCode);

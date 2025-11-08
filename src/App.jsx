@@ -31,10 +31,8 @@ function TriviaGame({ prefillFromRoute }) {
   const [players, setPlayers] = useState([]);
   const [screenName, setScreenName] = useState("");
   const [mode, setMode] = useState("HOME"); // HOME, LOBBY, GAME, RESULTS
-  const [testMode, setTestMode] = useState(false);
 
   const isHost = useMemo(() => lobbyState?.hostUserId === userId, [lobbyState, userId]);
-  const isSoloTest = testMode && isHost;
 
   // 📡 Firestore Listeners (Game + Players)
   useEffect(() => {
@@ -190,7 +188,7 @@ function TriviaGame({ prefillFromRoute }) {
   }
 
   // 🎮 GAME (Host)
-  if (lobbyState?.status === "PLAYING" && isHost && !isSoloTest) {
+  if (lobbyState?.status === "PLAYING" && isHost) {
     return (
       <HostGameScreen
         db={db}
@@ -199,14 +197,12 @@ function TriviaGame({ prefillFromRoute }) {
         players={players}
         currentQuestion={currentQuestion}
         userId={userId}
-        testMode={testMode}
-        setTestMode={setTestMode}
       />
     );
   }
 
-  // 🎮 GAME (Player, including solo test)
-  if (lobbyState?.status === "PLAYING" && (!isHost || isSoloTest)) {
+  // 🎮 GAME (Player)
+  if (lobbyState?.status === "PLAYING" && !isHost) {
     return (
       <PlayerGameScreen
         db={db}
@@ -215,8 +211,6 @@ function TriviaGame({ prefillFromRoute }) {
         players={players}
         currentQuestion={currentQuestion}
         userId={userId}
-        testMode={testMode}
-        setTestMode={setTestMode}
       />
     );
   }
