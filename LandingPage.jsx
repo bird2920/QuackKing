@@ -10,7 +10,7 @@ const LandingPage = () => {
                 {/* Logo/Title */}
                 <div className="space-y-4">
                     <h1 className="text-6xl sm:text-7xl md:text-8xl font-extrabold text-white tracking-tight">
-                        Smartish
+                        Knowish
                     </h1>
                     <p className="text-2xl sm:text-3xl text-indigo-200 font-semibold">
                         Jackbox-Style Multiplayer Fun

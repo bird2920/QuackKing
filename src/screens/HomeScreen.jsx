@@ -109,7 +109,7 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
 
   return (
     <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-6 mx-2">
-      <h1 className="text-4xl font-extrabold text-center mb-4">Smartish</h1>
+      <h1 className="text-4xl font-extrabold text-center mb-4">Knowish</h1>
       {error && <p className="text-red-600 text-center mb-3 font-semibold text-sm">{error}</p>}
 
       <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>

@@ -1,4 +1,4 @@
-# 🎮 Smartish - Real-time Multiplayer Trivia Game
+# 🎮 Knowish - Real-time Multiplayer Trivia Game
 
 A Jackbox-style multiplayer game with real-time synchronization, built with React and Firebase.
 
