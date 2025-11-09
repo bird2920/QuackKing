@@ -123,7 +123,7 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
       />
 
       <div className="flex flex-col gap-3 mb-3">
-        <div className="flex justify-between gap-2">
+        <div className="flex justify-center gap-1 sm:gap-2 flex-wrap">
           {codeDigits.map((digit, index) => (
             <input
               key={index}
@@ -137,7 +137,7 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
               onPaste={(e) => handlePaste(e, index)}
               onFocus={(e) => e.target.select()}
               ref={(el) => (codeInputRefs.current[index] = el)}
-              className={`w-16 h-16 text-center text-2xl font-black uppercase rounded-2xl border-4 focus:outline-none focus:ring-2 transition ${
+              className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-black uppercase rounded-2xl border-4 focus:outline-none focus:ring-2 transition ${
                 isPrefilled ? "bg-gray-200 border-green-400 text-green-700" : "border-indigo-300 text-gray-900"
               }`}
               aria-label={`Game code character ${index + 1}`}
@@ -147,7 +147,7 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
         <button
           onClick={handleJoin}
           disabled={!screenName.trim() || codeDigits.some((digit) => !digit)}
-          className="p-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+          className="p-3 w-full bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50"
         >
           Join
         </button>
