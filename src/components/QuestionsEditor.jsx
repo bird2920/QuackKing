@@ -44,7 +44,7 @@ const QuestionsEditor = ({ questions = [], onSave, isHost }) => {
   if (questions.length === 0) return null;
 
   return (
-    <div className="w-full max-w-6xl mt-6 p-6 bg-gray-800 rounded-xl shadow-2xl">
+    <div className="w-full max-w-5xl sm:max-w-6xl mx-auto mt-6 p-4 sm:p-6 bg-gray-800 rounded-xl shadow-2xl">
       <div className="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h3 className="text-2xl font-bold text-white">
           Questions Editor ({editedQuestions.length})
