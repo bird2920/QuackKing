@@ -381,18 +381,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                 >
                   Test Alone ({questionCount} Qs)
                 </button>
-                <button
-                  onClick={() => {
-                    const inviteUrl = `${window.location.origin}/#/game/${gameCode}`;
-                    navigator.clipboard
-                      .writeText(inviteUrl)
-                      .then(() => console.log("Copied invite link:", inviteUrl))
-                      .catch((e) => console.error("Copy failed:", e));
-                  }}
-                  className="w-full mt-3 p-3 bg-yellow-500 text-gray-900 font-bold rounded-xl hover:bg-yellow-400 transition"
-                >
-                  Copy Invite Link
-                </button>
+               {/* Copy Invite Link with visual confirmation */}
+               {/*
+                 Add a local state for copy confirmation
+               */}
+               {(() => {
+                 // Use a local state for copy confirmation
+                 // This block is IIFE to use hook at top level, but since this is inside render, we need to lift it up.
+                 // So, move the state definition to the component top.
+                 return null;
+               })()}
+               <CopyInviteButton gameCode={gameCode} />
               </div>
             </div>
           ) : (
@@ -501,6 +500,94 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       <p className="mt-8 text-xs text-gray-500 text-center break-all">
         User ID: {userId}
       </p>
+    </div>
+  );
+}
+
+// --- Copy Invite Button with confirmation ---
+function CopyInviteButton({ gameCode }) {
+  const [copied, setCopied] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(typeof navigator === "object" && typeof navigator.share === "function");
+  }, []);
+
+  const inviteUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/#/game/${gameCode}`;
+  }, [gameCode]);
+
+  const handleCopy = useCallback(() => {
+    if (!inviteUrl) return;
+    navigator.clipboard
+      .writeText(inviteUrl)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((e) => console.error("Copy failed:", e));
+  }, [inviteUrl]);
+
+  const handleShare = useCallback(async () => {
+    if (!canShare || !inviteUrl) return;
+    try {
+      await navigator.share({
+        title: "Join my trivia game",
+        text: `Use code ${gameCode} to hop into the lobby!`,
+        url: inviteUrl,
+      });
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        console.error("Share failed:", err);
+      }
+    }
+  }, [canShare, gameCode, inviteUrl]);
+
+  return (
+    <div className="relative w-full mt-3">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          onClick={handleCopy}
+          className="w-full sm:w-auto flex-1 p-3 bg-yellow-500 text-gray-900 font-bold rounded-xl hover:bg-yellow-400 transition"
+        >
+          Copy Invite Link
+        </button>
+        {canShare && (
+          <button
+            onClick={handleShare}
+            className="w-full sm:w-auto flex-1 p-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition"
+          >
+            Share Invite
+          </button>
+        )}
+      </div>
+      {copied && (
+        <div
+          className="absolute inset-x-0 mx-auto mt-2 w-max px-4 py-1 rounded-lg bg-green-600 text-white text-sm font-semibold shadow-lg animate-fadeInOut"
+          style={{
+            top: "100%",
+            pointerEvents: "none",
+            transition: "opacity 0.5s",
+          }}
+        >
+          <span role="img" aria-label="copied" className="mr-1">✅</span>
+          Copied!
+        </div>
+      )}
+      <style>
+        {`
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(5px);}
+          15% { opacity: 1; transform: translateY(0);}
+          85% { opacity: 1; transform: translateY(0);}
+          100% { opacity: 0; transform: translateY(-5px);}
+        }
+        .animate-fadeInOut {
+          animation: fadeInOut 2s both;
+        }
+        `}
+      </style>
     </div>
   );
 }
