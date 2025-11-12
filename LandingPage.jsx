@@ -1,8 +1,24 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+
+const TAGLINES = [
+    "Are your friends as smart as they think they are?",
+    "Prove your brain isn’t just decorative.",
+    "Finally, a way to destroy friendships intelligently.",
+    "Your ego called — it wants a rematch.",
+    "A trivia game that rewards knowledge… and sarcasm.",
+    "Less small talk. More smack talk.",
+    "Perfect for people who can’t resist saying ‘actually…’.",
+    "It’s like a pub quiz — but the bar is your couch.",
+    "No controllers. No downloads. Just chaos.",
+];
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const tagline = useMemo(
+        () => TAGLINES[Math.floor(Math.random() * TAGLINES.length)],
+        []
+    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
@@ -10,11 +26,9 @@ const LandingPage = () => {
                 {/* Logo/Title */}
                 <div className="space-y-4">
                     <h1 className="text-6xl sm:text-7xl md:text-8xl font-extrabold text-white tracking-tight">
-                        Knowish
+                        Smartish
                     </h1>
-                    <p className="text-2xl sm:text-3xl text-indigo-200 font-semibold">
-                        Jackbox-Style Multiplayer Fun
-                    </p>
+                    <p className="text-2xl sm:text-3xl text-indigo-200 font-semibold">{tagline}</p>
                 </div>
 
                 {/* Description */}
