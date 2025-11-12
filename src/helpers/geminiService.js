@@ -66,10 +66,10 @@ export async function callAIApi(userQuery, systemPrompt) {
   if (!userQuery?.trim()) throw new Error("User prompt is required.");
 
   const payload = {
-    contents: [
-      ...(systemPrompt ? [{ role: "system", parts: [{ text: systemPrompt }] }] : []),
-      { role: "user", parts: [{ text: userQuery }] },
-    ],
+    ...(systemPrompt
+      ? { systemInstruction: { parts: [{ text: systemPrompt }] } }
+      : {}),
+    contents: [{ role: "user", parts: [{ text: userQuery }] }],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: QUESTION_SCHEMA,

@@ -21,6 +21,15 @@ import HostGameScreen from "./screens/HostGameScreen";
 import PlayerGameScreen from "./screens/PlayerGameScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 
+const LOADING_MESSAGES = [
+  "Trivia time is brewing…",
+  "Sharpening pencils for your next quiz…",
+  "Warming up the neurons 🔥",
+  "Pro tip: Guessing isn’t always bad.",
+  "Loading fun… hopefully.",
+  "Preparing mind traps 🧠",
+];
+
 // 🎮 Game Component (handles game state & logic)
 function TriviaGame({ prefillFromRoute }) {
   const params = prefillFromRoute ? useParams() : {};
@@ -33,6 +42,12 @@ function TriviaGame({ prefillFromRoute }) {
   const [mode, setMode] = useState("HOME"); // HOME, LOBBY, GAME, RESULTS
 
   const isHost = useMemo(() => lobbyState?.hostUserId === userId, [lobbyState, userId]);
+
+  const randomLoadingMessage = useMemo(
+    () =>
+      LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)],
+    []
+  );
 
   // 📡 Firestore Listeners (Game + Players)
   useEffect(() => {
@@ -146,7 +161,7 @@ function TriviaGame({ prefillFromRoute }) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        <p>Connecting to Firebase...</p>
+        <p>{randomLoadingMessage}</p>
       </div>
     );
   }

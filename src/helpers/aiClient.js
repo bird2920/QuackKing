@@ -1,7 +1,7 @@
 import { callAIApi, getGeminiConfig } from "./geminiService";
 
 const DEFAULT_SYSTEM_PROMPT =
-  "You are a trivia generator. Produce 5 multiple-choice questions for the given topic. Each must have 1 correct answer and 3 plausible distractors. Return valid JSON as an array of objects with fields: question, correctAnswer, distractor1, distractor2, distractor3.";
+  "Make 5 trivia Qs with 1 correct and 3 wrong. Return JSON [{question,correctAnswer,distractor1,distractor2,distractor3}]";
 
 const getProxyUrl = () => {
   const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};

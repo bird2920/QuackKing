@@ -14,6 +14,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [topicInput, setTopicInput] = useState("");
   const [topicStatus, setTopicStatus] = useState("idle");
   const [topicMessage, setTopicMessage] = useState("");
+  const [questionInputTab, setQuestionInputTab] = useState("ai");
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
 
@@ -31,23 +32,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
-  const topicSuggestions = useMemo(
-    () =>
-      players
-        .filter((p) => !p.isHost && p.topicSuggestion)
-        .map((p) => ({
-          name: p.name,
-          suggestion: p.topicSuggestion,
-          timestamp: p.topicSuggestionTimestamp || 0,
-        }))
-        .sort((a, b) => b.timestamp - a.timestamp),
-    [players]
-  );
   const suggestionIdeas = ["World Capitals", "90s Cartoons", "Space Race", "Food Trivia", "Pop Culture", "Video Games"];
 
   useEffect(() => {
     setTopicInput(playerSuggestion);
   }, [playerSuggestion]);
+
+  useEffect(() => {
+    if (!aiEnabled && questionInputTab === "ai") {
+      setQuestionInputTab("csv");
+    }
+  }, [aiEnabled, questionInputTab]);
 
   // 🏁 Start Game (host only)
   const handleStartGame = useCallback(async () => {
@@ -207,7 +202,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [db, gameCode]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-gray-900 text-white px-4 py-6 lg:py-8 flex flex-col items-center">
       <h2 className="text-4xl font-extrabold text-indigo-400 mb-2 text-center">
         Lobby: {gameCode}
       </h2>
@@ -215,11 +210,13 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         Ask players to join using this code.
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl flex-1 items-start">
         {/* 🧠 Host Controls */}
         <div
-          className={`p-6 rounded-xl shadow-2xl ${
-            isHost ? "bg-purple-800" : "bg-gray-800"
+          className={`p-6 rounded-xl shadow-2xl flex flex-col h-full ${
+            isHost
+              ? "bg-purple-800 lg:max-h-[75vh] xl:max-h-[70vh]"
+              : "bg-gray-800 lg:max-h-[75vh] xl:max-h-[70vh]"
           }`}
         >
           <h3 className="text-2xl font-bold mb-4 border-b pb-2">
@@ -227,102 +224,104 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
           </h3>
 
           {isHost ? (
-            <div className="space-y-5">
-              {/* ✨ AI Generator */}
-              {aiEnabled ? (
-                <div className="bg-purple-700 p-4 rounded-lg shadow-inner">
-                  <h4 className="text-lg font-bold text-yellow-300 mb-1">
-                    AI Question Generator
-                  </h4>
-                  <p className="text-xs text-gray-200 mb-2">
-                    Enter a theme and generate 5 multiple-choice questions.
-                  </p>
-                  <input
-                    type="text"
-                    value={generatorTopic}
-                    onChange={(e) => setGeneratorTopic(e.target.value)}
-                    disabled={isGenerating}
-                    className="w-full p-2 mb-2 bg-purple-600 border border-purple-500 rounded-lg text-white placeholder-gray-300"
-                    placeholder="e.g., Space Exploration, The 90s, Food"
-                  />
-                  <button
-                    onClick={handleGenerateQuestions}
-                    disabled={!generatorTopic.trim() || isGenerating}
-                    className="w-full p-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50"
-                  >
-                    {isGenerating ? "Generating..." : "Generate Questions for Theme"}
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-gray-900/40 p-4 rounded-lg border border-purple-600">
-                  <h4 className="text-lg font-bold text-white mb-1">AI Generator Disabled</h4>
-                  <p className="text-sm text-gray-300">
-                    {aiUnavailableMessage}
-                  </p>
-                </div>
-              )}
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="space-y-5 overflow-y-auto pr-1 flex-1 min-h-0">
+                {/* ✨ Question Input Modes */}
+                <div className="bg-gray-900/40 rounded-lg border border-purple-600 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row">
+                    <button
+                      onClick={() => aiEnabled && setQuestionInputTab("ai")}
+                      disabled={!aiEnabled}
+                      className={`flex-1 px-4 py-2 text-sm font-semibold tracking-wide border-b sm:border-b-0 sm:border-r border-purple-700/60 transition ${
+                        questionInputTab === "ai"
+                          ? "bg-purple-700 text-white"
+                          : "text-gray-300 hover:text-white"
+                      } ${!aiEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      AI Generation
+                    </button>
+                    <button
+                      onClick={() => setQuestionInputTab("csv")}
+                      className={`flex-1 px-4 py-2 text-sm font-semibold tracking-wide transition ${
+                        questionInputTab === "csv"
+                          ? "bg-purple-700 text-white"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      Manual CSV Upload
+                    </button>
+                  </div>
 
-              <div className="bg-gray-900/40 rounded-lg p-4 border border-purple-600">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-bold text-white">Player Suggestions</h4>
-                  <span className="text-xs text-gray-400">
-                    {topicSuggestions.length} idea{topicSuggestions.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                {topicSuggestions.length === 0 ? (
-                  <p className="text-sm text-gray-400">
-                    Encourage players to suggest a theme! Suggestions will appear here.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {topicSuggestions.map((suggestion, idx) => (
-                      <div
-                        key={`${suggestion.suggestion}-${suggestion.timestamp}-${idx}`}
-                        className="flex items-center justify-between gap-3 bg-gray-800/80 rounded-xl px-3 py-2"
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-sm text-gray-400">{suggestion.name}</span>
-                          <span className="text-base font-semibold text-white truncate">
-                            {suggestion.suggestion}
-                          </span>
+                  <div className="p-4 sm:p-5 space-y-3">
+                    {questionInputTab === "ai" && (
+                      <>
+                        {aiEnabled ? (
+                          <>
+                            <div>
+                              <h4 className="text-lg font-bold text-yellow-300 mb-1">AI Question Generator</h4>
+                              <p className="text-xs text-gray-200">
+                                Drop a theme and we’ll create five multiple-choice questions for it.
+                              </p>
+                            </div>
+                            <input
+                              type="text"
+                              value={generatorTopic}
+                              onChange={(e) => setGeneratorTopic(e.target.value)}
+                              disabled={isGenerating}
+                              className="w-full p-2 bg-purple-600 border border-purple-500 rounded-lg text-white placeholder-gray-300"
+                              placeholder="e.g., Space Exploration, The 90s, Food"
+                            />
+                            <button
+                              onClick={handleGenerateQuestions}
+                              disabled={!generatorTopic.trim() || isGenerating}
+                              className="w-full p-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50"
+                            >
+                              {isGenerating ? "Generating..." : "Generate Questions"}
+                            </button>
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-300">
+                            <h4 className="text-lg font-bold text-white mb-1">AI Generator Disabled</h4>
+                            <p>{aiUnavailableMessage}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {questionInputTab === "csv" && (
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-lg font-bold">Manual CSV Upload</h4>
+                          <p className="text-xs text-gray-400">
+                            Paste spreadsheet rows (Question, Answer, Option1, Option2, Option3).
+                          </p>
                         </div>
+                        <textarea
+                          value={csvText}
+                          onChange={(e) => setCsvText(e.target.value)}
+                          placeholder='What is 2+2?,4,2,3,5'
+                          className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white font-mono text-sm resize-none"
+                        />
                         <button
-                          onClick={() => setGeneratorTopic(suggestion.suggestion)}
-                          className="text-xs font-bold px-3 py-1 rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-400"
+                          onClick={handleCSVUpload}
+                          disabled={!csvText.trim()}
+                          className="w-full p-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition disabled:opacity-50"
                         >
-                          Use Theme
+                          Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
                         </button>
                       </div>
-                    ))}
+                    )}
                   </div>
+                </div>
+
+                {/* ⚠️ Error */}
+                {error && (
+                  <p className="text-red-300 text-sm italic">{error}</p>
                 )}
               </div>
 
-              {/* 📄 CSV Upload */}
-              <div className={aiEnabled ? "border-t border-purple-600 pt-4" : ""}>
-                <h4 className="text-lg font-bold mb-2">Manual CSV Upload</h4>
-                <textarea
-                  value={csvText}
-                  onChange={(e) => setCsvText(e.target.value)}
-                  placeholder='Paste CSV data here (e.g. "Question,Answer,Option1,Option2,Option3")'
-                  className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white font-mono text-sm resize-none"
-                />
-                <button
-                  onClick={handleCSVUpload}
-                  disabled={!csvText.trim()}
-                  className="w-full mt-2 p-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition disabled:opacity-50"
-                >
-                  Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
-                </button>
-              </div>
-
-              {/* ⚠️ Error */}
-              {error && (
-                <p className="text-red-300 text-sm italic">{error}</p>
-              )}
-
-              {/* 🚀 Start Game */}
-              <div className="border-t border-purple-600 pt-4">
+              {/* 🚀 Start + Share always visible */}
+              <div className="border-t border-purple-600 pt-4 mt-4">
                 <p className="font-semibold text-lg mb-2">
                   Questions Loaded:{" "}
                   <span className="text-yellow-300">{questionCount}</span>
@@ -381,21 +380,11 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                 >
                   Test Alone ({questionCount} Qs)
                 </button>
-               {/* Copy Invite Link with visual confirmation */}
-               {/*
-                 Add a local state for copy confirmation
-               */}
-               {(() => {
-                 // Use a local state for copy confirmation
-                 // This block is IIFE to use hook at top level, but since this is inside render, we need to lift it up.
-                 // So, move the state definition to the component top.
-                 return null;
-               })()}
-               <CopyInviteButton gameCode={gameCode} />
+                <CopyInviteButton gameCode={gameCode} />
               </div>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-5 overflow-y-auto pr-1">
               <div className="bg-gray-900/40 border border-gray-700 rounded-xl p-4 shadow-inner">
                 <h4 className="text-lg font-bold text-white mb-1">Suggest a Trivia Theme</h4>
                 <p className="text-sm text-gray-300 mb-3">
@@ -450,33 +439,58 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         </div>
 
         {/* 👥 Player List */}
-        <div className="lg:col-span-2 p-6 bg-gray-800 rounded-xl shadow-2xl">
+        <div className="lg:col-span-2 p-6 bg-gray-800 rounded-xl shadow-2xl flex flex-col h-full lg:max-h-[75vh] xl:max-h-[70vh]">
           <h3 className="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">
             Players ({players.length})
           </h3>
-          <div className="max-h-96 overflow-y-auto space-y-2">
-            {players.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between bg-gray-700 p-3 rounded-lg shadow-md"
-              >
-                <span className="font-medium text-white flex-grow truncate">
-                  {p.name}
-                </span>
-                <div className="flex gap-2 flex-shrink-0">
-                  {p.isHost && (
-                    <span className="text-sm font-semibold text-purple-400">
-                      HOST
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            {players.map((p) => {
+              const suggestion = (p.topicSuggestion || "").trim();
+              return (
+                <div
+                  key={p.id}
+                  className="bg-gray-700 p-3 rounded-lg shadow-md flex flex-col gap-2"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-white flex-grow truncate">
+                      {p.name}
                     </span>
-                  )}
-                  {p.id === userId && (
-                    <span className="text-sm font-semibold text-green-400">
-                      (You)
-                    </span>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {p.isHost && (
+                        <span className="text-sm font-semibold text-purple-400">
+                          HOST
+                        </span>
+                      )}
+                      {p.id === userId && (
+                        <span className="text-sm font-semibold text-green-400">
+                          (You)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {suggestion && (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-800/60 px-3 py-2">
+                      <div className="text-sm text-gray-200">
+                        <span className="text-xs uppercase tracking-wide text-gray-400 mr-2">
+                          Suggested Theme
+                        </span>
+                        <span className="font-semibold text-white break-words">
+                          {suggestion}
+                        </span>
+                      </div>
+                      {isHost && (
+                        <button
+                          onClick={() => setGeneratorTopic(suggestion)}
+                          className="self-start sm:self-auto text-xs font-bold px-3 py-1 rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-400"
+                        >
+                          Use Theme
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {isHost && players.length === 1 && (
             <p className="text-yellow-400 mt-4 text-center text-lg animate-pulse">

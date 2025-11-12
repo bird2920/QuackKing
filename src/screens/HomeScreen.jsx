@@ -9,8 +9,10 @@ const toDigitArray = (value = "") =>
 export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName, prefilledCode }) {
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
+  const [pendingFocusIndex, setPendingFocusIndex] = useState(null);
   const nameInputRef = useRef(null);
   const codeInputRefs = useRef([]);
+  const autoFocusLockRef = useRef(false);
 
   const isPrefilled = Boolean(prefilledCode);
   const codeValue = codeDigits.join("");
@@ -35,22 +37,51 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
     onCreate();
   };
 
-  const focusInput = (index) => {
-    codeInputRefs.current[index]?.focus();
+  const focusInput = (index, immediate = false) => {
+    if (index < 0 || index >= CODE_LENGTH) return;
+    if (immediate) {
+      const target = codeInputRefs.current[index];
+      if (target) {
+        autoFocusLockRef.current = true;
+        target.focus();
+      }
+      return;
+    }
+    setPendingFocusIndex(index);
   };
+
+  useEffect(() => {
+    if (pendingFocusIndex === null) return;
+    const target = codeInputRefs.current[pendingFocusIndex];
+    if (target) {
+      autoFocusLockRef.current = true;
+      target.focus();
+    }
+    setPendingFocusIndex(null);
+  }, [pendingFocusIndex]);
 
   const insertCharacters = (startIndex, value) => {
     if (!value) return startIndex;
+    const chars = value.split("");
     let cursor = startIndex;
+    const updates = [];
+
+    chars.forEach((char) => {
+      if (cursor >= CODE_LENGTH) return;
+      updates.push({ index: cursor, char });
+      cursor += 1;
+    });
+
+    if (!updates.length) return cursor;
+
     setCodeDigits((prev) => {
       const next = [...prev];
-      value.split("").forEach((char) => {
-        if (cursor >= CODE_LENGTH) return;
-        next[cursor] = char;
-        cursor += 1;
+      updates.forEach(({ index, char }) => {
+        next[index] = char;
       });
       return next;
     });
+
     return cursor;
   };
 
@@ -93,23 +124,23 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
         return next;
       });
       if (!codeDigits[index] && index > 0) {
-        focusInput(index - 1);
+        focusInput(index - 1, true);
       }
       return;
     }
 
     if (event.key === "ArrowLeft" && index > 0) {
       event.preventDefault();
-      focusInput(index - 1);
+      focusInput(index - 1, true);
     } else if (event.key === "ArrowRight" && index < CODE_LENGTH - 1) {
       event.preventDefault();
-      focusInput(index + 1);
+      focusInput(index + 1, true);
     }
   };
 
   return (
     <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-6 mx-2">
-      <h1 className="text-4xl font-extrabold text-center mb-4">Knowish</h1>
+      <h1 className="text-4xl font-extrabold text-center mb-4">Smartish</h1>
       {error && <p className="text-red-600 text-center mb-3 font-semibold text-sm">{error}</p>}
 
       <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
@@ -135,7 +166,13 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
               onChange={(e) => handleDigitChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onPaste={(e) => handlePaste(e, index)}
-              onFocus={(e) => e.target.select()}
+              onFocus={(e) => {
+                if (autoFocusLockRef.current) {
+                  autoFocusLockRef.current = false;
+                  return;
+                }
+                e.target.select();
+              }}
               ref={(el) => (codeInputRefs.current[index] = el)}
               className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-black uppercase rounded-2xl border-4 focus:outline-none focus:ring-2 transition ${
                 isPrefilled ? "bg-gray-200 border-green-400 text-green-700" : "border-indigo-300 text-gray-900"

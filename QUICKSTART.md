@@ -1,4 +1,4 @@
-# 🚀 Quick Start: Get Knowish Running
+# 🚀 Quick Start: Get Smartish Running
 
 ## TL;DR (5 minutes)
 
