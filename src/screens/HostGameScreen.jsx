@@ -6,6 +6,8 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [playersWhoAnswered, setPlayersWhoAnswered] = useState(new Set());
+  const [autoHostEnabled, setAutoHostEnabled] = useState(false);
+  const [nextQuestionCountdown, setNextQuestionCountdown] = useState(null);
 
   const questionNumber = (lobbyState?.currentQuestionIndex || 0) + 1;
   const totalQuestions = lobbyState?.questions?.length || 0;
@@ -136,6 +138,76 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     }
   }, [db, gameCode]);
 
+  // 🤖 Auto reveal when everyone answers
+  useEffect(() => {
+    if (!autoHostEnabled || revealed) return;
+    const totalParticipants = players.filter((p) => !p.isHost).length;
+    if (totalParticipants === 0) return;
+    if (playersWhoAnswered.size === totalParticipants) {
+      handleRevealAnswer();
+    }
+  }, [autoHostEnabled, players, playersWhoAnswered, revealed, handleRevealAnswer]);
+
+  // ⏭️ Auto advance or end after reveal
+  useEffect(() => {
+    if (!autoHostEnabled || !revealed) {
+      setNextQuestionCountdown(null);
+      return;
+    }
+
+    const totalParticipants = players.filter((p) => !p.isHost).length;
+
+    if (isLastQuestion) {
+      if (totalParticipants === 0 || playersWhoAnswered.size !== totalParticipants) {
+        setNextQuestionCountdown(null);
+        return;
+      }
+
+      setNextQuestionCountdown(3);
+      const countdownInterval = setInterval(() => {
+        setNextQuestionCountdown((prev) => {
+          if (prev === null) return null;
+          return Math.max(prev - 1, 0);
+        });
+      }, 1000);
+
+      const endTimeout = setTimeout(() => {
+        handleEndGame();
+      }, 3000);
+
+      return () => {
+        clearInterval(countdownInterval);
+        clearTimeout(endTimeout);
+      };
+    }
+
+    setNextQuestionCountdown(6);
+    const countdownInterval = setInterval(() => {
+      setNextQuestionCountdown((prev) => {
+        if (prev === null) return null;
+        return Math.max(prev - 1, 0);
+      });
+    }, 1000);
+
+    const advanceTimeout = setTimeout(() => {
+      handleNextQuestion();
+    }, 6000);
+
+    return () => {
+      clearInterval(countdownInterval);
+      clearTimeout(advanceTimeout);
+    };
+  }, [
+    autoHostEnabled,
+    revealed,
+    isLastQuestion,
+    players,
+    playersWhoAnswered,
+    handleNextQuestion,
+    handleEndGame,
+    lobbyState?.currentQuestionIndex,
+  ]);
+
   if (!currentQuestion) return null;
 
   const timeColor = timeRemaining <= 10 ? "text-red-500 animate-pulse" : "text-yellow-400";
@@ -223,6 +295,28 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
 
       {/* Host Controls */}
       <div className="w-full max-w-md space-y-3">
+        <div className="w-full bg-gray-800 p-4 rounded-xl flex items-center justify-between shadow-inner">
+          <div>
+            <p className="text-lg font-bold">Auto-Host Mode</p>
+            <p className="text-sm text-gray-400">Reveal & advance automatically</p>
+          </div>
+          <button
+            onClick={() => setAutoHostEnabled((prev) => !prev)}
+            className={`px-4 py-2 rounded-lg font-bold transition ${
+              autoHostEnabled ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"
+            }`}
+          >
+            {autoHostEnabled ? "On" : "Off"}
+          </button>
+        </div>
+
+        {autoHostEnabled && revealed && nextQuestionCountdown !== null && (
+          <div className="text-center text-sm text-gray-300">
+            {isLastQuestion ? "Showing results in" : "Next question in"}{" "}
+            <span className="font-bold text-yellow-400">{nextQuestionCountdown}s</span>
+          </div>
+        )}
+
         {!revealed ? (
           <button
             onClick={handleRevealAnswer}
