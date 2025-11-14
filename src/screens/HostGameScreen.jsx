@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getGameDocPath, getPlayersCollectionPath } from "../helpers/firebasePaths";
 import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
+import { calculateScoreUpdates } from "../helpers/scoringUtils";
 
 export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
@@ -63,27 +64,28 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       const playersColRef = getPlayersCollectionPath(db, gameCode);
       const playerDocs = await getDocs(playersColRef);
       if (!playerDocs.empty) {
-        const batch = writeBatch(db);
-        playerDocs.docs.forEach((docSnap) => {
-          const playerData = docSnap.data();
-          const answered = playerData.lastAnswer != null;
-          const correct = playerData.lastAnswer === currentQuestion.correctAnswer;
-          if (answered) {
-            const updatesObj = {
-              answeredCount: (playerData.answeredCount || 0) + 1,
-              correctCount: (playerData.correctCount || 0) + (correct ? 1 : 0),
-            };
-            if (correct) {
-              // Time-based scoring
-              const timeElapsed = (playerData.answerTimestamp || Date.now()) - lobbyState.currentQuestionStartTime;
-              const speedBonus = Math.max(0, 30000 - timeElapsed) / 1000; // 30s max
-              const pointsEarned = 100 + Math.floor(speedBonus * 10); // 100 base + up to 300 bonus
-              updatesObj.score = (playerData.score || 0) + pointsEarned;
-            }
-            batch.update(docSnap.ref, updatesObj);
-          }
+        const playerRefMap = new Map();
+        const playerData = playerDocs.docs.map((docSnap) => {
+          playerRefMap.set(docSnap.id, docSnap.ref);
+          return { id: docSnap.id, ...docSnap.data() };
         });
-        await batch.commit();
+
+        const scoreUpdates = calculateScoreUpdates({
+          players: playerData,
+          correctAnswer: currentQuestion.correctAnswer,
+          questionStartTime: lobbyState?.currentQuestionStartTime,
+        });
+
+        if (scoreUpdates.length) {
+          const batch = writeBatch(db);
+          scoreUpdates.forEach(({ id, updates }) => {
+            const ref = playerRefMap.get(id);
+            if (ref) {
+              batch.update(ref, updates);
+            }
+          });
+          await batch.commit();
+        }
       }
     } catch (err) {
       console.error("❌ Error calculating scores:", err);
@@ -181,7 +183,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       };
     }
 
-    setNextQuestionCountdown(6);
+    setNextQuestionCountdown(3);
     const countdownInterval = setInterval(() => {
       setNextQuestionCountdown((prev) => {
         if (prev === null) return null;
@@ -191,7 +193,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
 
     const advanceTimeout = setTimeout(() => {
       handleNextQuestion();
-    }, 6000);
+      }, 3000);
 
     return () => {
       clearInterval(countdownInterval);
