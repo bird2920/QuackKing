@@ -105,18 +105,20 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [csvText, db, gameCode]);
 
   // 🤖 AI Generate Questions
-  const handleGenerateQuestions = useCallback(async () => {
-    if (!db || !gameCode || !isHost || !generatorTopic.trim()) return;
-    if (!aiEnabled) {
-      setError(aiUnavailableMessage || "AI generator unavailable. Please upload questions manually.");
-      return;
-    }
+  const handleGenerateQuestions = useCallback(
+    async (topicOverride) => {
+      const topic = (topicOverride ?? generatorTopic).trim();
+      if (!db || !gameCode || !isHost || !topic) return;
+      if (!aiEnabled) {
+        setError(aiUnavailableMessage || "AI generator unavailable. Please upload questions manually.");
+        return;
+      }
 
-    setIsGenerating(true);
-    setError("");
+      setIsGenerating(true);
+      setError("");
 
-    try {
-      const aiQuestions = await requestAiQuestions(generatorTopic.trim());
+      try {
+        const aiQuestions = await requestAiQuestions(topic);
       if (!aiQuestions.length) {
         throw new Error("AI returned empty response.");
       }
@@ -140,24 +142,26 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
 
       const gameDocRef = getGameDocPath(db, gameCode);
       await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
-      setCsvText("");
-      setGeneratorTopic("");
+        setCsvText("");
+        setGeneratorTopic(topicOverride ? topic : "");
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }, 150);
-    } catch (e) {
+      } catch (e) {
       console.error("AI generation failed:", e);
       const friendlyMessage =
         e.code === "AI_DISABLED"
           ? "AI generator is disabled. Upload CSV questions instead."
           : `Failed to generate questions: ${e.message}`;
       setError(friendlyMessage);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [aiEnabled, aiUnavailableMessage, db, gameCode, generatorTopic, isHost]);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [aiEnabled, aiUnavailableMessage, db, gameCode, generatorTopic, isHost]
+  );
 
   // 🔀 Simple shuffle
   const shuffle = (array) => array.sort(() => Math.random() - 0.5);
@@ -451,7 +455,11 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                         <p className="text-white break-words">{suggestion}</p>
                         {isHost && (
                           <button
-                            onClick={() => setGeneratorTopic(suggestion)}
+                            // Set the generator topic to the suggested theme, then auto-generate.
+                            onClick={() => {
+                              setGeneratorTopic(suggestion);
+                              void handleGenerateQuestions(suggestion);
+                            }}
                             className="mt-2 text-xs font-semibold text-yellow-200 hover:text-yellow-100"
                           >
                             Use Theme
