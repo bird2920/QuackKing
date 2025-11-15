@@ -77,79 +77,114 @@ export default function ResultsScreen({
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
-      <h1 className="text-5xl font-extrabold text-red-500 mb-2 text-center">
-        GAME OVER
-      </h1>
-      <h2 className="text-3xl font-semibold text-yellow-400 mb-8 text-center">
-        Final Results — {gameCode}
-      </h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+      <div className="w-full max-w-4xl mx-auto space-y-8">
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-purple-100/70">
+            <span role="img" aria-label="trophy">🏁</span>
+            Final Results
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black">
+            Game Over — <span className="text-yellow-300">{gameCode}</span>
+          </h1>
+          <p className="text-purple-100/75">Great run! See how everyone stacked up below.</p>
+        </div>
 
-      {/* 🏆 Leaderboard */}
-      <div className="w-full max-w-xl bg-gray-800 p-6 rounded-2xl shadow-2xl">
-        <h3 className="text-2xl font-bold mb-4 text-center border-b border-gray-600 pb-2">
-          Leaderboard
-        </h3>
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">Leaderboard</p>
+              <h2 className="text-3xl font-extrabold">Top Players</h2>
+            </div>
+            <div className="text-sm text-purple-100/70">
+              {sortedPlayers.length} player{sortedPlayers.length === 1 ? "" : "s"} ranked
+            </div>
+          </div>
 
-        <div className="space-y-3">
-          {sortedPlayers.map((p, index) => {
-            const answered = p.answeredCount || 0;
-            const correct = p.correctCount || 0;
-            const incorrect = answered - correct;
-            return (
-              <div
-                key={p.id}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-xl shadow-lg ${
-                  index === 0
-                    ? "bg-yellow-500 text-gray-900 scale-105 ring-4 ring-yellow-300"
-                    : "bg-gray-700"
-                }`}
-              >
-                <div className="flex items-center gap-3 flex-grow min-w-0">
-                  <span className="text-2xl font-black w-10 text-center flex-shrink-0">
-                    {index + 1}.
-                  </span>
-                  <span
-                    className={`font-extrabold truncate ${
-                      index === 0 ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    {p.name}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-3 text-sm sm:text-base font-semibold sm:justify-end">
-                  <span className={`${index === 0 ? "text-gray-900" : "text-indigo-300"}`}>{p.score.toLocaleString()} pts</span>
-                  <span className="text-green-400">✅ {correct}</span>
-                  <span className="text-red-400">❌ {incorrect}</span>
-                  <span className="text-yellow-300">↺ {answered}</span>
-                </div>
+          <div className="mt-6 space-y-4">
+            {sortedPlayers.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-5 py-6 text-center text-purple-100/70">
+                No player stats recorded yet.
               </div>
-            );
-          })}
+            )}
+            {sortedPlayers.map((p, index) => {
+              const answered = p.answeredCount || 0;
+              const correct = p.correctCount || 0;
+              const incorrect = answered - correct;
+              const isFirst = index === 0;
+              const isSecond = index === 1;
+              const isThird = index === 2;
+              const cardGradient = isFirst
+                ? "from-yellow-200 via-yellow-400 to-amber-500 text-slate-900"
+                : isSecond
+                ? "from-slate-100/80 via-slate-200/70 to-slate-300/60 text-slate-900"
+                : isThird
+                ? "from-amber-200/60 via-orange-200/50 to-orange-300/50 text-slate-900"
+                : "from-white/10 to-white/5 text-white";
+              const chipBg = isFirst || isSecond || isThird ? "bg-white/30 text-slate-900" : "bg-white/10 text-purple-100";
+              return (
+                <div
+                  key={p.id}
+                  className={`rounded-2xl border border-white/10 bg-gradient-to-r ${cardGradient} px-5 py-4 shadow-2xl shadow-black/30`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl font-black tracking-tight">{index + 1}</span>
+                        <span className="text-lg font-bold truncate">{p.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
+                        <span className={`rounded-full px-3 py-1 ${chipBg}`}>
+                          {p.score.toLocaleString()} pts
+                        </span>
+                        <span className="rounded-full bg-green-500/20 px-3 py-1 text-green-100">
+                          ✅ {correct}
+                        </span>
+                        <span className="rounded-full bg-rose-500/20 px-3 py-1 text-rose-100">
+                          ❌ {incorrect}
+                        </span>
+                        <span className="rounded-full bg-amber-500/20 px-3 py-1 text-amber-100">
+                          ↺ {answered}
+                        </span>
+                      </div>
+                    </div>
+                    {isFirst && (
+                      <div className="text-4xl" role="img" aria-label="champion">🏆</div>
+                    )}
+                    {isSecond && !isFirst && (
+                      <div className="text-4xl" role="img" aria-label="medal">🥈</div>
+                    )}
+                    {isThird && !isFirst && !isSecond && (
+                      <div className="text-4xl" role="img" aria-label="medal">🥉</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* 🧑‍✈️ Host Controls */}
-      {isHost ? (
-        <div className="mt-10 w-full max-w-md space-y-4">
-          <button
-            onClick={handleNewRound}
-            className="w-full p-4 bg-green-600 text-white font-extrabold text-xl rounded-xl shadow-2xl hover:bg-green-700 transition transform hover:scale-[1.02]"
-          >
-            🔄 New Round (Keep Players & Questions)
-          </button>
-          <button
-            onClick={handleEndGame}
-            className="w-full p-4 bg-red-600 text-white font-extrabold text-xl rounded-xl shadow-2xl hover:bg-red-700 transition transform hover:scale-[1.02]"
-          >
-            End Game and Close Room
-          </button>
-        </div>
-      ) : (
-        <p className="mt-10 text-lg text-gray-400 text-center">
-          Waiting for host to close the room...
-        </p>
-      )}
+        {isHost ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <button
+              onClick={handleNewRound}
+              className="rounded-2xl border border-green-300/40 bg-gradient-to-r from-emerald-400/80 to-green-500/70 px-6 py-4 text-lg font-bold text-white shadow-xl shadow-emerald-900/40 transition hover:scale-[1.01]"
+            >
+              🔄 New Round (keep everyone)
+            </button>
+            <button
+              onClick={handleEndGame}
+              className="rounded-2xl border border-rose-400/40 bg-gradient-to-r from-rose-500/80 to-red-600/80 px-6 py-4 text-lg font-bold text-white shadow-xl shadow-rose-900/40 transition hover:scale-[1.01]"
+            >
+              Close Room & Reset
+            </button>
+          </div>
+        ) : (
+          <p className="text-center text-purple-100/75 text-lg">
+            Waiting for the host to start a new round or end the game...
+          </p>
+        )}
+      </div>
     </div>
   );
 }

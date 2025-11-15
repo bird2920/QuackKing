@@ -14,7 +14,6 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [topicInput, setTopicInput] = useState("");
   const [topicStatus, setTopicStatus] = useState("idle");
   const [topicMessage, setTopicMessage] = useState("");
-  const [questionInputTab, setQuestionInputTab] = useState("ai");
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
 
@@ -37,12 +36,6 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   useEffect(() => {
     setTopicInput(playerSuggestion);
   }, [playerSuggestion]);
-
-  useEffect(() => {
-    if (!aiEnabled && questionInputTab === "ai") {
-      setQuestionInputTab("csv");
-    }
-  }, [aiEnabled, questionInputTab]);
 
   // 🏁 Start Game (host only)
   const handleStartGame = useCallback(async () => {
@@ -202,318 +195,294 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [db, gameCode]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white px-4 py-6 lg:py-8 flex flex-col items-center">
-      <h2 className="text-4xl font-extrabold text-indigo-400 mb-2 text-center">
-        Lobby: {gameCode}
-      </h2>
-      <p className="text-lg text-gray-300 mb-6 text-center">
-        Ask players to join using this code.
-      </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+      <div className="w-full max-w-6xl mx-auto space-y-8">
+        <div className="text-center space-y-2">
+          <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Game Lobby</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold">
+            Code: <span className="text-yellow-300">{gameCode}</span>
+          </h2>
+          <p className="text-base text-purple-100/80">
+            Ask players to join with the code above or share the invite link below.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl flex-1 items-start">
-        {/* 🧠 Host Controls */}
-        <div
-          className={`p-6 rounded-xl shadow-2xl flex flex-col h-full ${
-            isHost
-              ? "bg-purple-800 lg:max-h-[75vh] xl:max-h-[70vh]"
-              : "bg-gray-800 lg:max-h-[75vh] xl:max-h-[70vh]"
-          }`}
-        >
-          <h3 className="text-2xl font-bold mb-4 border-b pb-2">
-            {isHost ? "Host Controls" : "Waiting for Host..."}
-          </h3>
-
-          {isHost ? (
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="space-y-5 overflow-y-auto pr-1 flex-1 min-h-0">
-                {/* ✨ Question Input Modes */}
-                <div className="bg-gray-900/40 rounded-lg border border-purple-600 overflow-hidden">
-                  <div className="flex flex-col sm:flex-row">
-                    <button
-                      onClick={() => aiEnabled && setQuestionInputTab("ai")}
-                      disabled={!aiEnabled}
-                      className={`flex-1 px-4 py-2 text-sm font-semibold tracking-wide border-b sm:border-b-0 sm:border-r border-purple-700/60 transition ${
-                        questionInputTab === "ai"
-                          ? "bg-purple-700 text-white"
-                          : "text-gray-300 hover:text-white"
-                      } ${!aiEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      AI Generation
-                    </button>
-                    <button
-                      onClick={() => setQuestionInputTab("csv")}
-                      className={`flex-1 px-4 py-2 text-sm font-semibold tracking-wide transition ${
-                        questionInputTab === "csv"
-                          ? "bg-purple-700 text-white"
-                          : "text-gray-300 hover:text-white"
-                      }`}
-                    >
-                      Manual CSV Upload
-                    </button>
-                  </div>
-
-                  <div className="p-4 sm:p-5 space-y-3">
-                    {questionInputTab === "ai" && (
-                      <>
-                        {aiEnabled ? (
-                          <>
-                            <div>
-                              <h4 className="text-lg font-bold text-yellow-300 mb-1">AI Question Generator</h4>
-                              <p className="text-xs text-gray-200">
-                                Drop a theme and we’ll create five multiple-choice questions for it.
-                              </p>
-                            </div>
-                            <input
-                              type="text"
-                              value={generatorTopic}
-                              onChange={(e) => setGeneratorTopic(e.target.value)}
-                              disabled={isGenerating}
-                              className="w-full p-2 bg-purple-600 border border-purple-500 rounded-lg text-white placeholder-gray-300"
-                              placeholder="e.g., Space Exploration, The 90s, Food"
-                            />
-                            <button
-                              onClick={handleGenerateQuestions}
-                              disabled={!generatorTopic.trim() || isGenerating}
-                              className="w-full p-2 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50"
-                            >
-                              {isGenerating ? "Generating..." : "Generate Questions"}
-                            </button>
-                          </>
-                        ) : (
-                          <div className="text-sm text-gray-300">
-                            <h4 className="text-lg font-bold text-white mb-1">AI Generator Disabled</h4>
-                            <p>{aiUnavailableMessage}</p>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {questionInputTab === "csv" && (
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="text-lg font-bold">Manual CSV Upload</h4>
-                          <p className="text-xs text-gray-400">
-                            Paste spreadsheet rows (Question, Answer, Option1, Option2, Option3).
-                          </p>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+          <div className="space-y-6">
+            {isHost ? (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-yellow-200/80 flex items-center gap-2">
+                          <span role="img" aria-label="sparkles">✨</span>
+                          AI Question Generator
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">Create themed questions</h3>
+                        <p className="text-sm text-purple-100/70">
+                          Drop a theme and we&apos;ll spin up five multiple-choice questions.
+                        </p>
+                      </div>
+                      {aiEnabled ? (
+                        <>
+                          <input
+                            type="text"
+                            value={generatorTopic}
+                            onChange={(e) => setGeneratorTopic(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && generatorTopic.trim()) {
+                                handleGenerateQuestions();
+                              }
+                            }}
+                            disabled={isGenerating}
+                            className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
+                            placeholder="e.g., Science, History, Pop Culture..."
+                          />
+                          <button
+                            onClick={handleGenerateQuestions}
+                            disabled={!generatorTopic.trim() || isGenerating}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 font-semibold text-white shadow-lg shadow-purple-900/40 transition hover:from-purple-400 hover:to-pink-400 disabled:opacity-50"
+                          >
+                            {isGenerating ? (
+                              <>
+                                <span role="img" aria-label="magic" className="animate-spin">✨</span>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <span role="img" aria-label="wand">🔮</span>
+                                Generate Questions
+                              </>
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+                          <p className="font-semibold mb-1">AI Generator Disabled</p>
+                          <p>{aiUnavailableMessage}</p>
                         </div>
-                        <textarea
-                          value={csvText}
-                          onChange={(e) => setCsvText(e.target.value)}
-                          placeholder='What is 2+2?,4,2,3,5'
-                          className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white font-mono text-sm resize-none"
-                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-blue-200/80 flex items-center gap-2">
+                          <span role="img" aria-label="clipboard">📋</span>
+                          Manual Questions
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">Paste CSV rows</h3>
+                        <p className="text-sm text-purple-100/70">
+                          Format: Question, Answer, Option1, Option2, Option3.
+                        </p>
+                      </div>
+                      <textarea
+                        value={csvText}
+                        onChange={(e) => setCsvText(e.target.value)}
+                        placeholder={'Q: What is 2+2?,4,2,3,5'}
+                        className="w-full min-h-[130px] rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 font-mono text-sm text-white placeholder:text-purple-200/60 focus:outline-none focus:ring-2 focus:ring-blue-300/60 resize-none"
+                      />
+                      <button
+                        onClick={handleCSVUpload}
+                        disabled={!csvText.trim()}
+                        className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50"
+                      >
+                        Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
+                      </button>
+                      <p className="text-xs text-purple-100/60">
+                        Tip: copy rows straight from Sheets/Excel and drop them here.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-rose-400/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                    {error}
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/40">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Share + Start</p>
+                    <h4 className="text-2xl font-semibold mt-1">Ready to play?</h4>
+                    <p className="text-sm text-purple-100/70">
+                      {questionCount > 0
+                        ? `You have ${questionCount} question${questionCount === 1 ? "" : "s"} loaded.`
+                        : "Upload or generate questions to unlock the start button."}
+                    </p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <button
+                      onClick={handleStartGame}
+                      disabled={questionCount === 0 || players.length < 2}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-4 py-3 text-lg font-bold text-white shadow-lg shadow-red-900/40 transition hover:bg-red-400/90 disabled:opacity-50"
+                    >
+                      Start Game
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!isHost || !db || !lobbyState) return;
+                        if (lobbyState.questions.length === 0) {
+                          setError("You must upload or generate questions first.");
+                          return;
+                        }
+                        try {
+                          const gameDocRef = getGameDocPath(db, gameCode);
+                          const playersColRef = getPlayersCollectionPath(db, gameCode);
+                          const playerDocs = await getDocs(playersColRef);
+                          if (!playerDocs.empty) {
+                            const batch = writeBatch(db);
+                            playerDocs.docs.forEach((docSnap) =>
+                              batch.update(docSnap.ref, {
+                                lastAnswer: null,
+                                score: 0,
+                                answerTimestamp: null,
+                              })
+                            );
+                            await batch.commit();
+                          }
+                          await updateDoc(gameDocRef, {
+                            status: "PLAYING",
+                            currentQuestionIndex: 0,
+                            currentQuestionStartTime: Date.now(),
+                          });
+                          if (typeof window.setTestMode === "function") {
+                            window.setTestMode(true);
+                          }
+                        } catch (e) {
+                          console.error("❌ Error starting test mode:", e);
+                          setError(`Failed to start test mode: ${e.message}`);
+                        }
+                      }}
+                      disabled={questionCount === 0}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 text-lg font-semibold text-white transition hover:bg-slate-900 disabled:opacity-50"
+                    >
+                      Test Alone
+                    </button>
+                  </div>
+                  {players.length < 2 && (
+                    <p className="text-center text-sm text-amber-200">
+                      Need at least 2 players to launch the real game.
+                    </p>
+                  )}
+                  <CopyInviteButton gameCode={gameCode} />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/30">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-yellow-200/80">Suggest a Theme</p>
+                    <h3 className="text-2xl font-bold mt-1">Help the host pick a topic</h3>
+                    <p className="text-sm text-purple-100/70">
+                      Share your idea and they&apos;ll see it instantly.
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={topicInput}
+                    onChange={(e) => setTopicInput(e.target.value.slice(0, 40))}
+                    placeholder="e.g., World Capitals, 90s Throwbacks..."
+                    className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70"
+                    disabled={topicStatus === "saving"}
+                  />
+                  <button
+                    onClick={handleSubmitSuggestion}
+                    disabled={!topicInput.trim() || topicStatus === "saving"}
+                    className="w-full rounded-xl bg-gradient-to-r from-yellow-400 to-orange-400 px-4 py-3 font-semibold text-gray-900 shadow-lg shadow-amber-800/40 transition hover:from-yellow-300 hover:to-orange-300 disabled:opacity-50"
+                  >
+                    {topicStatus === "saving" ? "Sending..." : "Send to Host"}
+                  </button>
+                  {topicMessage && (
+                    <p className={`text-sm ${topicStatus === "error" ? "text-rose-200" : "text-green-200"}`}>
+                      {topicMessage}
+                    </p>
+                  )}
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mb-2">Quick ideas</p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestionIdeas.map((idea) => (
                         <button
-                          onClick={handleCSVUpload}
-                          disabled={!csvText.trim()}
-                          className="w-full p-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition disabled:opacity-50"
+                          key={idea}
+                          onClick={() => setTopicInput(idea)}
+                          className="px-3 py-1 text-xs rounded-full border border-white/15 bg-white/5 text-white hover:border-yellow-300"
                         >
-                          Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
+                          {idea}
                         </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 text-sm text-purple-100/80">
+                  Host is preparing questions. Hang tight, share suggestions, or hype up the lobby!
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-white/10">
+              <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Squad</p>
+              <h3 className="text-2xl font-bold">Players ({players.length})</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-3">
+              {players.map((p) => {
+                const suggestion = (p.topicSuggestion || "").trim();
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-inner shadow-black/20 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-white truncate">{p.name}</span>
+                      <div className="flex gap-2 text-xs font-semibold uppercase tracking-wide">
+                        {p.isHost && <span className="text-purple-300">Host</span>}
+                        {p.id === userId && <span className="text-green-300">You</span>}
+                      </div>
+                    </div>
+                    {suggestion && (
+                      <div className="rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm">
+                        <div className="text-[0.6rem] uppercase tracking-[0.3em] text-purple-200/70 mb-1">
+                          Suggested Theme
+                        </div>
+                        <p className="text-white break-words">{suggestion}</p>
+                        {isHost && (
+                          <button
+                            onClick={() => setGeneratorTopic(suggestion)}
+                            className="mt-2 text-xs font-semibold text-yellow-200 hover:text-yellow-100"
+                          >
+                            Use Theme
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* ⚠️ Error */}
-                {error && (
-                  <p className="text-red-300 text-sm italic">{error}</p>
-                )}
-              </div>
-
-              {/* 🚀 Start + Share always visible */}
-              <div className="border-t border-purple-600 pt-4 mt-4">
-                <p className="font-semibold text-lg mb-2">
-                  Questions Loaded:{" "}
-                  <span className="text-yellow-300">{questionCount}</span>
-                </p>
-                <button
-                  onClick={handleStartGame}
-                  disabled={questionCount === 0 || players.length < 2}
-                  className="w-full p-4 bg-red-500 text-white font-extrabold rounded-xl hover:bg-red-600 transition disabled:opacity-50"
-                >
-                  Start Game ({questionCount} Qs)
-                </button>
-                {players.length < 2 && (
-                  <p className="text-yellow-300 text-sm text-center pt-2">
-                    Need at least 2 players.
-                  </p>
-                )}
-                <button
-                  onClick={async () => {
-                    if (!isHost || !db || !lobbyState) return;
-                    if (lobbyState.questions.length === 0) {
-                      setError("You must upload or generate questions first.");
-                      return;
-                    }
-                    try {
-                      const gameDocRef = getGameDocPath(db, gameCode);
-                      // Reset player answers and scores
-                      const playersColRef = getPlayersCollectionPath(db, gameCode);
-                      const playerDocs = await getDocs(playersColRef);
-                      if (!playerDocs.empty) {
-                        const batch = writeBatch(db);
-                        playerDocs.docs.forEach((docSnap) =>
-                          batch.update(docSnap.ref, {
-                            lastAnswer: null,
-                            score: 0,
-                            answerTimestamp: null,
-                          })
-                        );
-                        await batch.commit();
-                      }
-                      // Start game in testMode
-                      await updateDoc(gameDocRef, {
-                        status: "PLAYING",
-                        currentQuestionIndex: 0,
-                        currentQuestionStartTime: Date.now(),
-                      });
-                      if (typeof window.setTestMode === "function") {
-                        window.setTestMode(true);
-                      }
-                    } catch (e) {
-                      console.error("❌ Error starting test mode:", e);
-                      setError(`Failed to start test mode: ${e.message}`);
-                    }
-                  }}
-                  disabled={questionCount === 0}
-                  className="w-full mt-2 p-4 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-900 transition disabled:opacity-50"
-                >
-                  Test Alone ({questionCount} Qs)
-                </button>
-                <CopyInviteButton gameCode={gameCode} />
-              </div>
+                );
+              })}
             </div>
-          ) : (
-            <div className="space-y-5 overflow-y-auto pr-1">
-              <div className="bg-gray-900/40 border border-gray-700 rounded-xl p-4 shadow-inner">
-                <h4 className="text-lg font-bold text-white mb-1">Suggest a Trivia Theme</h4>
-                <p className="text-sm text-gray-300 mb-3">
-                  Help the host pick questions by sharing a topic idea. They&rsquo;ll see it instantly.
-                </p>
-                <input
-                  type="text"
-                  value={topicInput}
-                  onChange={(e) => setTopicInput(e.target.value.slice(0, 40))}
-                  placeholder="e.g., World Capitals, 90s Throwbacks..."
-                  className="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 mb-3"
-                  disabled={topicStatus === "saving"}
-                />
-                <button
-                  onClick={handleSubmitSuggestion}
-                  disabled={!topicInput.trim() || topicStatus === "saving"}
-                  className="w-full p-3 rounded-lg bg-yellow-500 text-gray-900 font-bold hover:bg-yellow-400 disabled:opacity-50"
-                >
-                  {topicStatus === "saving" ? "Sending..." : "Send to Host"}
-                </button>
-                {topicMessage && (
-                  <p
-                    className={`mt-2 text-sm ${
-                      topicStatus === "error" ? "text-red-300" : "text-green-300"
-                    }`}
-                  >
-                    {topicMessage}
-                  </p>
-                )}
-                <div className="mt-3">
-                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Quick ideas</p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestionIdeas.map((idea) => (
-                      <button
-                        key={idea}
-                        onClick={() => setTopicInput(idea)}
-                        className="px-3 py-1 text-xs rounded-full bg-gray-800 text-gray-200 border border-gray-700 hover:border-yellow-400"
-                      >
-                        {idea}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-900/20 rounded-xl p-4 border border-gray-800">
-                <p className="text-sm text-gray-300">
-                  Host is getting the questions ready. Hang tight, share a suggestion above, or hype up your friends!
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 👥 Player List */}
-        <div className="lg:col-span-2 p-6 bg-gray-800 rounded-xl shadow-2xl flex flex-col h-full lg:max-h-[75vh] xl:max-h-[70vh]">
-          <h3 className="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">
-            Players ({players.length})
-          </h3>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-            {players.map((p) => {
-              const suggestion = (p.topicSuggestion || "").trim();
-              return (
-                <div
-                  key={p.id}
-                  className="bg-gray-700 p-3 rounded-lg shadow-md flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-medium text-white flex-grow truncate">
-                      {p.name}
-                    </span>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {p.isHost && (
-                        <span className="text-sm font-semibold text-purple-400">
-                          HOST
-                        </span>
-                      )}
-                      {p.id === userId && (
-                        <span className="text-sm font-semibold text-green-400">
-                          (You)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {suggestion && (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-800/60 px-3 py-2">
-                      <div className="text-sm text-gray-200">
-                        <span className="text-xs uppercase tracking-wide text-gray-400 mr-2">
-                          Suggested Theme
-                        </span>
-                        <span className="font-semibold text-white break-words">
-                          {suggestion}
-                        </span>
-                      </div>
-                      {isHost && (
-                        <button
-                          onClick={() => setGeneratorTopic(suggestion)}
-                          className="self-start sm:self-auto text-xs font-bold px-3 py-1 rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-400"
-                        >
-                          Use Theme
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {isHost && players.length === 1 && (
+              <p className="border-t border-white/10 p-4 text-center text-amber-200 text-sm animate-pulse">
+                Waiting for players...
+              </p>
+            )}
           </div>
-          {isHost && players.length === 1 && (
-            <p className="text-yellow-400 mt-4 text-center text-lg animate-pulse">
-              Waiting for players...
-            </p>
-          )}
         </div>
+
+        {isHost && questionCount > 0 && (
+          <div ref={editorRef} className="w-full">
+            <QuestionsEditor
+              questions={lobbyState.questions}
+              onSave={handleSaveQuestions}
+              isHost={isHost}
+            />
+          </div>
+        )}
+
+        <p className="text-xs text-purple-100/60 text-center break-all">User ID: {userId}</p>
       </div>
-
-      {/* 📝 Questions Editor - shown after questions are loaded */}
-      {isHost && questionCount > 0 && (
-        <div ref={editorRef} className="w-full">
-          <QuestionsEditor
-            questions={lobbyState.questions}
-            onSave={handleSaveQuestions}
-            isHost={isHost}
-          />
-        </div>
-      )}
-
-      <p className="mt-8 text-xs text-gray-500 text-center break-all">
-        User ID: {userId}
-      </p>
     </div>
   );
 }
