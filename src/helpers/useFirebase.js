@@ -12,6 +12,7 @@ export const useFirebase = () => {
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [authUser, setAuthUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,14 +26,19 @@ export const useFirebase = () => {
 
     const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
       if (user) {
+        setAuthUser(user);
         setUserId(user.uid);
       } else {
+        setAuthUser(null);
+        setUserId(null);
         try {
           if (initialAuthToken) {
             const cred = await signInWithCustomToken(authInstance, initialAuthToken);
+            setAuthUser(cred.user);
             setUserId(cred.user.uid);
           } else {
             const cred = await signInAnonymously(authInstance);
+            setAuthUser(cred.user);
             setUserId(cred.user.uid);
           }
         } catch (err) {
@@ -45,5 +51,5 @@ export const useFirebase = () => {
     return () => unsubscribe();
   }, []);
 
-  return { db, auth, userId, isLoading };
+  return { db, auth, authUser, userId, isLoading };
 };

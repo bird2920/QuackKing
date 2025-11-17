@@ -1,23 +1,53 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getGameDocPath,
   getPlayersCollectionPath,
 } from "../helpers/firebasePaths";
 import { getDocs, deleteDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { persistGameStats } from "../helpers/userStats";
 
 export default function ResultsScreen({
   db,
   gameCode,
   players,
   isHost,
+  userId,
+  authUser,
   setGameCode,
   setMode,
+  onRequestAccount,
 }) {
   // 🧮 Sort players by score, excluding host
   const sortedPlayers = useMemo(
     () => players.filter((p) => !p.isHost).sort((a, b) => b.score - a.score),
     [players]
   );
+  const playerRecord = useMemo(
+    () => players.find((p) => p.id === userId),
+    [players, userId]
+  );
+  const placement = useMemo(() => {
+    if (!playerRecord || playerRecord.isHost) return null;
+    const index = sortedPlayers.findIndex((p) => p.id === userId);
+    return index === -1 ? null : index + 1;
+  }, [playerRecord, sortedPlayers, userId]);
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const [saveMessage, setSaveMessage] = useState("");
+  const isSignedIn = Boolean(authUser) && !authUser?.isAnonymous;
+  const playerSnapshotRef = useRef(null);
+  const placementRef = useRef(null);
+
+  useEffect(() => {
+    if (playerRecord) {
+      playerSnapshotRef.current = playerRecord;
+    }
+  }, [playerRecord]);
+
+  useEffect(() => {
+    placementRef.current = placement;
+  }, [placement]);
+
+  const latestPlayerRecord = playerRecord || playerSnapshotRef.current;
 
   // 🧹 End Game and clean up Firestore docs
   const handleEndGame = async () => {
@@ -74,6 +104,50 @@ export default function ResultsScreen({
     } catch (e) {
       console.error("❌ Error starting new round:", e);
     }
+  };
+
+  const handlePersistStats = useCallback(async () => {
+    const record = latestPlayerRecord;
+    if (!db || !userId || !record) return;
+    setSaveStatus("saving");
+    setSaveMessage("");
+    try {
+      await persistGameStats({
+        db,
+        userId,
+        playerRecord: record,
+        placement: placement ?? placementRef.current ?? null,
+        gameCode,
+      });
+      setSaveStatus("success");
+      setSaveMessage("Saved! Your stats are now tracked for future games.");
+    } catch (e) {
+      console.error("❌ Error saving stats:", e);
+      setSaveStatus("error");
+      setSaveMessage("Could not save stats. Please try again.");
+    }
+  }, [db, gameCode, placement, playerRecord, userId]);
+
+  const handleSaveClick = () => {
+    if (!latestPlayerRecord) {
+      setSaveMessage("No player stats were recorded for you.");
+      setSaveStatus("error");
+      return;
+    }
+
+    if (!isSignedIn) {
+      onRequestAccount?.({
+        mode: "signup",
+        onSuccess: () => {
+          setTimeout(() => {
+            handlePersistStats();
+          }, 0);
+        },
+      });
+      return;
+    }
+
+    handlePersistStats();
   };
 
   return (
@@ -162,6 +236,40 @@ export default function ResultsScreen({
               );
             })}
           </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)] text-center space-y-3">
+          <h3 className="text-2xl font-bold">Keep this run forever</h3>
+          <p className="text-purple-100/80">
+            {isSignedIn
+              ? "Store this game in your profile and build a streak."
+              : "Sign up (or sign in) to save your score, answers, and games played."}
+          </p>
+          <button
+            onClick={handleSaveClick}
+            disabled={saveStatus === "saving" || !latestPlayerRecord}
+            className="w-full rounded-2xl bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-4 text-lg font-semibold text-slate-900 shadow-xl shadow-amber-600/30 transition hover:scale-[1.01] disabled:opacity-60"
+          >
+            {saveStatus === "saving"
+              ? "Saving..."
+              : isSignedIn
+              ? "Save this game"
+              : "Sign up & save"}
+          </button>
+          {saveMessage && (
+            <p
+              className={`text-sm ${
+                saveStatus === "success" ? "text-green-300" : "text-rose-200"
+              }`}
+            >
+              {saveMessage}
+            </p>
+          )}
+          {!latestPlayerRecord && (
+            <p className="text-sm text-rose-200">
+              We couldn&apos;t find your player record for this game.
+            </p>
+          )}
         </div>
 
         {isHost ? (

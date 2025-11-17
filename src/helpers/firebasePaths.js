@@ -10,3 +10,6 @@ export const getPlayersCollectionPath = (db, gameCode) =>
 
 export const getPlayerDocPath = (db, gameCode, userId) =>
   doc(db, `artifacts/${appId}/public/data/games/${gameCode}/players/${userId}`);
+
+export const getUserStatsDocPath = (db, userId) =>
+  doc(db, `artifacts/${appId}/public/data/userStats/${userId}`);
