@@ -20,6 +20,19 @@ const ACHIEVEMENT_ICON_MAP = {
   core_scholar_mode_activated: "📚",
 };
 
+const THEME_SUGGESTION_POOL = [
+  "World Capitals",
+  "90s Cartoons",
+  "Space Race",
+  "Food Trivia",
+  "Pop Culture",
+  "Video Games",
+  "Mythical Creatures",
+  "Sports Legends",
+  "Movie Soundtracks",
+  "Science Fair Winners",
+];
+
 // Lobby screen allows host to upload or generate questions and start game.
 export default function LobbyScreen({ db, gameCode, lobbyState, players, userId, isHost }) {
   const [csvText, setCsvText] = useState("");
@@ -48,7 +61,14 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
-  const suggestionIdeas = ["World Capitals", "90s Cartoons", "Space Race", "Food Trivia", "Pop Culture", "Video Games"];
+  const hostThemeSuggestions = useMemo(() => {
+    const shuffled = [...THEME_SUGGESTION_POOL];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 5);
+  }, []);
   const localRecentAchievements = useMemo(() => {
     if (!localUserAchievements.length) return [];
     return [...localUserAchievements]
@@ -333,6 +353,23 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               </>
                             )}
                           </button>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mt-4 mb-2">
+                              Quick ideas
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {hostThemeSuggestions.map((idea) => (
+                                <button
+                                  key={idea}
+                                  onClick={() => setGeneratorTopic(idea)}
+                                  disabled={isGenerating}
+                                  className="px-3 py-1 text-xs rounded-full border border-white/15 bg-white/5 text-white hover:border-yellow-300 disabled:opacity-40"
+                                >
+                                  {idea}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </>
                       ) : (
                         <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -481,7 +518,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mb-2">Quick ideas</p>
                     <div className="flex flex-wrap gap-2">
-                      {suggestionIdeas.map((idea) => (
+                      {THEME_SUGGESTION_POOL.map((idea) => (
                         <button
                           key={idea}
                           onClick={() => setTopicInput(idea)}
