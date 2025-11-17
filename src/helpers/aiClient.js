@@ -1,7 +1,8 @@
 import { callAIApi, getGeminiConfig } from "./geminiService";
 
 const DEFAULT_SYSTEM_PROMPT =
-  "Make 5 trivia Qs with 1 correct and 3 wrong. Return JSON [{question,correctAnswer,distractor1,distractor2,distractor3}]";
+  "Make 5 trivia Qs with 1 correct and 3 wrong. Keep answers concise (under 60 chars) and avoid commentary or parentheses. Return JSON [{question,correctAnswer,distractor1,distractor2,distractor3}]";
+const MAX_ANSWER_LENGTH = 60;
 
 const getProxyUrl = () => {
   const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
@@ -30,18 +31,39 @@ export function getAIStatus() {
   };
 }
 
+const cleanAnswer = (text) => {
+  if (!text) return "";
+  let result = text.replace(/\s+/g, " ").trim();
+  if (result.length <= MAX_ANSWER_LENGTH) return result;
+
+  // Strip anything after the first parenthetical/comment delimiter to keep it tight.
+  const parentheticalIndex = result.indexOf(" (");
+  if (parentheticalIndex > 0) {
+    result = result.slice(0, parentheticalIndex).trim();
+  }
+  if (result.length <= MAX_ANSWER_LENGTH && result.length > 0) return result;
+
+  const delimiterRegex = /[.,:;-]/;
+  const delimiterMatch = result.match(delimiterRegex);
+  if (delimiterMatch && delimiterMatch.index > 0) {
+    result = result.slice(0, delimiterMatch.index).trim();
+  }
+  if (result.length <= MAX_ANSWER_LENGTH && result.length > 0) return result;
+
+  return `${result.slice(0, MAX_ANSWER_LENGTH - 1).trim()}…`;
+};
+
 const normalizeAiPayload = (raw) => {
   const source = Array.isArray(raw) ? raw : raw?.questions || [];
   return source
     .map((item) => {
       const question = item?.question?.trim();
-      const correctAnswer = item?.correctAnswer?.trim();
+      const correctAnswer = cleanAnswer(item?.correctAnswer);
       const distractors = [
-        item?.distractor1,
-        item?.distractor2,
-        item?.distractor3,
+        cleanAnswer(item?.distractor1),
+        cleanAnswer(item?.distractor2),
+        cleanAnswer(item?.distractor3),
       ]
-        .map((d) => d?.trim())
         .filter(Boolean);
 
       if (!question || !correctAnswer || distractors.length !== 3) return null;

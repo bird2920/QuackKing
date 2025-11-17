@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { HashRouter, Routes, Route, useParams } from "react-router-dom";
 import { onSnapshot, getDoc, setDoc } from "firebase/firestore";
 
@@ -20,6 +20,10 @@ import LobbyScreen from "./screens/LobbyScreen";
 import HostGameScreen from "./screens/HostGameScreen";
 import PlayerGameScreen from "./screens/PlayerGameScreen";
 import ResultsScreen from "./screens/ResultsScreen";
+import AccountModal from "./components/AccountModal";
+import { achievementBus, getAchievementService } from "./services/achievements";
+
+getAchievementService();
 
 const LOADING_MESSAGES = [
   "Trivia time is brewing…",
@@ -33,13 +37,16 @@ const LOADING_MESSAGES = [
 // 🎮 Game Component (handles game state & logic)
 function TriviaGame({ prefillFromRoute }) {
   const params = prefillFromRoute ? useParams() : {};
-  const { db, userId, isLoading } = useFirebase();
+  const { db, auth, authUser, userId, isLoading } = useFirebase();
 
   const [gameCode, setGameCode] = useState("");
   const [lobbyState, setLobbyState] = useState(null);
   const [players, setPlayers] = useState([]);
   const [screenName, setScreenName] = useState("");
   const [mode, setMode] = useState("HOME"); // HOME, LOBBY, GAME, RESULTS
+  const [authModalMode, setAuthModalMode] = useState("signup");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const authCallbackRef = useRef(null);
 
   const isHost = useMemo(() => lobbyState?.hostUserId === userId, [lobbyState, userId]);
 
@@ -48,6 +55,29 @@ function TriviaGame({ prefillFromRoute }) {
       LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)],
     []
   );
+
+  const openAuthModal = useCallback(({ mode = "signup", onSuccess } = {}) => {
+    authCallbackRef.current = typeof onSuccess === "function" ? onSuccess : null;
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    authCallbackRef.current = null;
+    setIsAuthModalOpen(false);
+  }, []);
+
+  const handleAuthSuccess = useCallback(() => {
+    if (typeof authCallbackRef.current === "function") {
+      authCallbackRef.current();
+    }
+    authCallbackRef.current = null;
+    closeAuthModal();
+  }, [closeAuthModal]);
+
+  const handleSwitchAuthMode = useCallback(() => {
+    setAuthModalMode((prev) => (prev === "signup" ? "signin" : "signup"));
+  }, []);
 
   // 📡 Firestore Listeners (Game + Players)
   useEffect(() => {
@@ -113,6 +143,11 @@ function TriviaGame({ prefillFromRoute }) {
         timestamp: Date.now(),
       });
 
+      achievementBus.emit({
+        type: "GAME_CREATED",
+        data: { userId, gameId: newCode },
+      });
+
       setGameCode(newCode);
       setMode("LOBBY");
     } catch (err) {
@@ -148,6 +183,11 @@ function TriviaGame({ prefillFromRoute }) {
           timestamp: Date.now(),
         });
 
+        achievementBus.emit({
+          type: "GAME_JOINED",
+          data: { userId, gameId: normalized },
+        });
+
         setGameCode(normalized);
         setMode("LOBBY");
       } catch (err) {
@@ -173,9 +213,11 @@ function TriviaGame({ prefillFromRoute }) {
 
   const currentQuestion = lobbyState?.questions?.[lobbyState.currentQuestionIndex];
 
+  let activeScreen = null;
+
   // 🏠 HOME
   if (mode === "HOME" || !userId) {
-    return (
+    activeScreen = (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <HomeScreen
           onJoin={handleJoinGame}
@@ -183,14 +225,14 @@ function TriviaGame({ prefillFromRoute }) {
           screenName={screenName}
           setScreenName={setScreenName}
           prefilledCode={prefilledCode}
+          authUser={authUser}
+          onRequestAccount={openAuthModal}
         />
       </div>
     );
-  }
-
-  // 🧑‍🤝‍🧑 LOBBY
-  if (lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD") {
-    return (
+  } else if (lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD") {
+    // 🧑‍🤝‍🧑 LOBBY
+    activeScreen = (
       <LobbyScreen
         db={db}
         gameCode={gameCode}
@@ -200,11 +242,9 @@ function TriviaGame({ prefillFromRoute }) {
         isHost={isHost}
       />
     );
-  }
-
-  // 🎮 GAME (Host)
-  if (lobbyState?.status === "PLAYING" && isHost) {
-    return (
+  } else if (lobbyState?.status === "PLAYING" && isHost) {
+    // 🎮 GAME (Host)
+    activeScreen = (
       <HostGameScreen
         db={db}
         gameCode={gameCode}
@@ -214,11 +254,9 @@ function TriviaGame({ prefillFromRoute }) {
         userId={userId}
       />
     );
-  }
-
-  // 🎮 GAME (Player)
-  if (lobbyState?.status === "PLAYING" && !isHost) {
-    return (
+  } else if (lobbyState?.status === "PLAYING" && !isHost) {
+    // 🎮 GAME (Player)
+    activeScreen = (
       <PlayerGameScreen
         db={db}
         gameCode={gameCode}
@@ -228,23 +266,36 @@ function TriviaGame({ prefillFromRoute }) {
         userId={userId}
       />
     );
-  }
-
-  // 🏁 RESULTS
-  if (lobbyState?.status === "RESULTS") {
-    return (
+  } else if (lobbyState?.status === "RESULTS") {
+    // 🏁 RESULTS
+    activeScreen = (
       <ResultsScreen
         db={db}
         gameCode={gameCode}
         players={players}
         isHost={isHost}
+        userId={userId}
+        authUser={authUser}
         setGameCode={setGameCode}
         setMode={setMode}
+        onRequestAccount={openAuthModal}
       />
     );
   }
 
-  return null;
+  return (
+    <>
+      {activeScreen}
+      <AccountModal
+        auth={auth}
+        isOpen={isAuthModalOpen}
+        mode={authModalMode}
+        onClose={closeAuthModal}
+        onSuccess={handleAuthSuccess}
+        onSwitchMode={handleSwitchAuthMode}
+      />
+    </>
+  );
 }
 
 // 📱 Main App with Routing

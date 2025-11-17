@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getGameDocPath, getPlayersCollectionPath } from "../helpers/firebasePaths";
 import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
 import { calculateScoreUpdates } from "../helpers/scoringUtils";
+import { achievementBus } from "../services/achievements";
 
 export default function HostGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
@@ -135,10 +136,35 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       await updateDoc(gameDocRef, {
         status: "RESULTS",
       });
+
+      const playersForEvent = players.map((player) => ({
+        userId: player.id,
+        score: player.score ?? 0,
+      }));
+      const rankByUser = new Map();
+      [...playersForEvent]
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .forEach((entry, index) => {
+          rankByUser.set(entry.userId, index + 1);
+        });
+
+      playersForEvent.forEach((playerEntry) => {
+        achievementBus.emit({
+          type: "GAME_FINISHED",
+          data: {
+            userId: playerEntry.userId,
+            gameId: gameCode,
+            finalScore: playerEntry.score,
+            players: playersForEvent,
+            hostUserId: lobbyState?.hostUserId,
+            finalRank: rankByUser.get(playerEntry.userId),
+          },
+        });
+      });
     } catch (err) {
       console.error("❌ Error ending game:", err);
     }
-  }, [db, gameCode]);
+  }, [db, gameCode, players, lobbyState]);
 
   // 🤖 Auto reveal when everyone answers
   useEffect(() => {

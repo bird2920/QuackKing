@@ -6,7 +6,15 @@ const sanitizeCode = (value = "") =>
 const toDigitArray = (value = "") =>
   Array.from({ length: CODE_LENGTH }, (_, idx) => value[idx] || "");
 
-export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName, prefilledCode }) {
+export default function HomeScreen({
+  onJoin,
+  onCreate,
+  screenName,
+  setScreenName,
+  prefilledCode,
+  authUser,
+  onRequestAccount,
+}) {
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
   const [pendingFocusIndex, setPendingFocusIndex] = useState(null);
@@ -198,6 +206,20 @@ export default function HomeScreen({ onJoin, onCreate, screenName, setScreenName
       >
         Create Game
       </button>
+
+      <div className="mt-4 text-center text-sm text-gray-600">
+        {authUser && !authUser.isAnonymous ? (
+          <span>Signed in as {authUser.email || "Smartish player"}</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onRequestAccount?.({ mode: "signin" })}
+            className="font-semibold text-indigo-600 underline-offset-2 hover:underline"
+          >
+            Want to keep your history? Sign in or create an account.
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getPlayerDocPath } from "../helpers/firebasePaths";
 import { updateDoc } from "firebase/firestore";
+import { achievementBus } from "../services/achievements";
 
 export default function PlayerGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
   const player = players.find((p) => p.id === userId);
   const [selectedAnswer, setSelectedAnswer] = useState(player?.lastAnswer || null);
   const [timeRemaining, setTimeRemaining] = useState(30);
+  const questionStartTime = lobbyState?.currentQuestionStartTime ?? null;
 
   // 🧹 Reset local state when question changes
   useEffect(() => {
@@ -36,17 +38,30 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
       if (!db || !gameCode || !player || player.lastAnswer) return;
 
       const playerDocRef = getPlayerDocPath(db, gameCode, userId);
+      const answerTimestamp = Date.now();
+      const answerTimeMs = questionStartTime
+        ? Math.max(answerTimestamp - questionStartTime, 0)
+        : 0;
       try {
         await updateDoc(playerDocRef, {
           lastAnswer: answer,
-          answerTimestamp: Date.now(),
+          answerTimestamp,
         });
         setSelectedAnswer(answer);
+        achievementBus.emit({
+          type: "QUESTION_ANSWERED",
+          data: {
+            userId,
+            gameId: gameCode,
+            correct: answer === currentQuestion.correctAnswer,
+            answerTimeMs,
+          },
+        });
       } catch (e) {
         console.error("❌ Error submitting answer:", e);
       }
     },
-    [db, gameCode, userId, player]
+    [db, gameCode, userId, player, questionStartTime, currentQuestion]
   );
 
   if (!currentQuestion || !player) return null;

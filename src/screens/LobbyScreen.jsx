@@ -4,6 +4,34 @@ import { parseCSV } from "../helpers/questionUtils";
 import { requestAiQuestions, getAIStatus } from "../helpers/aiClient";
 import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
+import PlayerAchievements from "../components/PlayerAchievements";
+import { achievementBus, getAchievementService } from "../services/achievements";
+
+const ACHIEVEMENT_ICON_MAP = {
+  core_under_1s_correct: "⚡️",
+  core_perfect_party_game: "🎉",
+  core_first_game_created: "🚀",
+  core_first_game_joined: "🙌",
+  core_five_perfect_games: "💯",
+  core_clutch_answer: "🏁",
+  core_lightning_round: "🌩️",
+  core_comeback_kid: "📈",
+  core_party_starter: "🎊",
+  core_scholar_mode_activated: "📚",
+};
+
+const THEME_SUGGESTION_POOL = [
+  "World Capitals",
+  "90s Cartoons",
+  "Space Race",
+  "Food Trivia",
+  "Pop Culture",
+  "Video Games",
+  "Mythical Creatures",
+  "Sports Legends",
+  "Movie Soundtracks",
+  "Science Fair Winners",
+];
 
 // Lobby screen allows host to upload or generate questions and start game.
 export default function LobbyScreen({ db, gameCode, lobbyState, players, userId, isHost }) {
@@ -14,12 +42,14 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [topicInput, setTopicInput] = useState("");
   const [topicStatus, setTopicStatus] = useState("idle");
   const [topicMessage, setTopicMessage] = useState("");
+  const [localUserAchievements, setLocalUserAchievements] = useState([]);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
 
   const questionCount = lobbyState?.questions?.length || 0;
   const aiStatus = useMemo(() => getAIStatus(), []);
   const aiEnabled = aiStatus.isEnabled;
+  const achievementService = useMemo(() => getAchievementService(), []);
   const aiUnavailableMessage = useMemo(() => {
     if (aiEnabled) return "";
     switch (aiStatus.reason) {
@@ -31,11 +61,73 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
-  const suggestionIdeas = ["World Capitals", "90s Cartoons", "Space Race", "Food Trivia", "Pop Culture", "Video Games"];
+  const hostThemeSuggestions = useMemo(() => {
+    const shuffled = [...THEME_SUGGESTION_POOL];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 5);
+  }, []);
+  const localRecentAchievements = useMemo(() => {
+    if (!localUserAchievements.length) return [];
+    return [...localUserAchievements]
+      .sort((a, b) => {
+        const aTime = a.unlock?.timestamp || 0;
+        const bTime = b.unlock?.timestamp || 0;
+        return bTime - aTime;
+      })
+      .slice(0, 6)
+      .map((entry) => ({
+        id: entry.achievement.id,
+        label: entry.achievement.name,
+        shortLabel:
+          entry.achievement.name.length > 18
+            ? `${entry.achievement.name.slice(0, 18).trim()}…`
+            : entry.achievement.name,
+        description: entry.achievement.description,
+        icon: ACHIEVEMENT_ICON_MAP[entry.achievement.id],
+        unlockedAt: entry.unlock?.timestamp || null,
+      }));
+  }, [localUserAchievements]);
 
   useEffect(() => {
     setTopicInput(playerSuggestion);
   }, [playerSuggestion]);
+
+  useEffect(() => {
+    if (!userId) {
+      setLocalUserAchievements([]);
+      return;
+    }
+
+    let isActive = true;
+    const syncAchievements = () => {
+      try {
+        const unlocked = achievementService.getAchievementsForUser(userId);
+        if (isActive) {
+          setLocalUserAchievements(unlocked);
+        }
+      } catch (err) {
+        console.error("Failed to load achievements:", err);
+      }
+    };
+
+    syncAchievements();
+
+    const eventTypes = ["GAME_CREATED", "GAME_JOINED", "GAME_FINISHED", "QUESTION_ANSWERED"];
+    const unsubscribes = eventTypes.map((eventType) =>
+      achievementBus.on(eventType, (event) => {
+        if (event.data.userId !== userId) return;
+        syncAchievements();
+      })
+    );
+
+    return () => {
+      isActive = false;
+      unsubscribes.forEach((unsub) => unsub());
+    };
+  }, [achievementService, userId]);
 
   // 🏁 Start Game (host only)
   const handleStartGame = useCallback(async () => {
@@ -107,7 +199,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   // 🤖 AI Generate Questions
   const handleGenerateQuestions = useCallback(
     async (topicOverride) => {
-      const topic = (topicOverride ?? generatorTopic).trim();
+      const rawTopic = typeof topicOverride === "string" ? topicOverride : generatorTopic;
+      const topic = rawTopic.trim();
       if (!db || !gameCode || !isHost || !topic) return;
       if (!aiEnabled) {
         setError(aiUnavailableMessage || "AI generator unavailable. Please upload questions manually.");
@@ -260,6 +353,23 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               </>
                             )}
                           </button>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mt-4 mb-2">
+                              Quick ideas
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {hostThemeSuggestions.map((idea) => (
+                                <button
+                                  key={idea}
+                                  onClick={() => setGeneratorTopic(idea)}
+                                  disabled={isGenerating}
+                                  className="px-3 py-1 text-xs rounded-full border border-white/15 bg-white/5 text-white hover:border-yellow-300 disabled:opacity-40"
+                                >
+                                  {idea}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </>
                       ) : (
                         <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -408,7 +518,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mb-2">Quick ideas</p>
                     <div className="flex flex-wrap gap-2">
-                      {suggestionIdeas.map((idea) => (
+                      {THEME_SUGGESTION_POOL.map((idea) => (
                         <button
                           key={idea}
                           onClick={() => setTopicInput(idea)}
@@ -447,6 +557,9 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                         {p.id === userId && <span className="text-green-300">You</span>}
                       </div>
                     </div>
+                    {p.id === userId && (
+                      <PlayerAchievements playerId={p.id} recentAchievements={localRecentAchievements} />
+                    )}
                     {suggestion && (
                       <div className="rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm">
                         <div className="text-[0.6rem] uppercase tracking-[0.3em] text-purple-200/70 mb-1">
