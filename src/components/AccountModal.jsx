@@ -3,6 +3,7 @@ import {
   EmailAuthProvider,
   createUserWithEmailAndPassword,
   linkWithCredential,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
@@ -33,6 +34,8 @@ export default function AccountModal({
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [resetStatus, setResetStatus] = useState("idle");
+  const [resetMessage, setResetMessage] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
@@ -40,6 +43,8 @@ export default function AccountModal({
       setPassword("");
       setError("");
       setStatus("idle");
+      setResetStatus("idle");
+      setResetMessage("");
     }
   }, [isOpen, mode]);
 
@@ -74,6 +79,26 @@ export default function AccountModal({
       console.error("Auth error:", err);
       setStatus("error");
       setError(getFriendlyMessage(err));
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!auth || isSignup) return;
+    if (!email) {
+      setResetStatus("error");
+      setResetMessage("Enter your account email first.");
+      return;
+    }
+    setResetStatus("loading");
+    setResetMessage("");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetStatus("success");
+      setResetMessage("Reset link sent! Check your inbox.");
+    } catch (err) {
+      console.error("Password reset error:", err);
+      setResetStatus("error");
+      setResetMessage(getFriendlyMessage(err));
     }
   };
 
@@ -126,6 +151,16 @@ export default function AccountModal({
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
               placeholder="Minimum 6 characters"
             />
+            {!isSignup && (
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={isLoading || resetStatus === "loading"}
+                className="text-xs font-semibold text-indigo-600 underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
           <button
             type="submit"
@@ -134,6 +169,15 @@ export default function AccountModal({
           >
             {isLoading ? "Saving..." : isSignup ? "Create account" : "Sign in"}
           </button>
+          {resetMessage && (
+            <p
+              className={`text-sm ${
+                resetStatus === "error" ? "text-rose-500" : "text-emerald-600"
+              }`}
+            >
+              {resetMessage}
+            </p>
+          )}
         </form>
         <div className="mt-4 text-center text-sm text-slate-600">
           {isSignup ? "Already have an account?" : "Need an account?"}{" "}

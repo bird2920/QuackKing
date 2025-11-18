@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { HashRouter, Routes, Route, useParams } from "react-router-dom";
 import { onSnapshot, getDoc, setDoc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
 
 // 🔧 Helper Imports
 import { useFirebase } from "./helpers/useFirebase";
@@ -78,6 +79,19 @@ function TriviaGame({ prefillFromRoute }) {
   const handleSwitchAuthMode = useCallback(() => {
     setAuthModalMode((prev) => (prev === "signup" ? "signin" : "signup"));
   }, []);
+
+  const handleSignOut = useCallback(async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      setGameCode("");
+      setLobbyState(null);
+      setPlayers([]);
+      setMode("HOME");
+    } catch (err) {
+      console.error("Failed to sign out:", err);
+    }
+  }, [auth]);
 
   // 📡 Firestore Listeners (Game + Players)
   useEffect(() => {
@@ -227,6 +241,7 @@ function TriviaGame({ prefillFromRoute }) {
           prefilledCode={prefilledCode}
           authUser={authUser}
           onRequestAccount={openAuthModal}
+          onSignOut={handleSignOut}
         />
       </div>
     );

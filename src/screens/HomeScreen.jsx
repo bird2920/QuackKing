@@ -14,6 +14,7 @@ export default function HomeScreen({
   prefilledCode,
   authUser,
   onRequestAccount,
+  onSignOut,
 }) {
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
@@ -209,7 +210,16 @@ export default function HomeScreen({
 
       <div className="mt-4 text-center text-sm text-gray-600">
         {authUser && !authUser.isAnonymous ? (
-          <span>Signed in as {authUser.email || "Smartish player"}</span>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <span>Signed in as {authUser.email || "Smartish player"}</span>
+            <button
+              type="button"
+              onClick={() => onSignOut?.()}
+              className="text-xs font-semibold text-rose-600 underline-offset-4 hover:underline"
+            >
+              Log out
+            </button>
+          </div>
         ) : (
           <button
             type="button"
