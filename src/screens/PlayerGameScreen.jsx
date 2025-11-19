@@ -88,7 +88,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </h1>
         </div>
 
-        <div className="grid w-full gap-6 md:grid-cols-[1fr_220px_200px]">
+        <div className="grid w-full gap-6 md:grid-cols-[1fr_220px]">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl shadow-2xl shadow-purple-900/40">
             <p className="text-sm uppercase tracking-[0.35em] text-purple-100/70">
               Question {questionNumber}
@@ -101,28 +101,6 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 backdrop-blur-xl shadow-2xl shadow-black/50 flex flex-col items-center justify-center">
             <p className="text-sm uppercase tracking-[0.35em] text-purple-100/70">Time Left</p>
             <div className={`mt-3 text-5xl font-black ${timeColor}`}>{timeRemaining}s</div>
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl max-h-[300px] overflow-y-auto flex flex-col space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-purple-100/60 mb-2">
-              Leaderboard
-            </p>
-
-            {sortedPlayers.map((p, i) => (
-              <div
-                key={p.id}
-                className={`flex justify-between items-center text-sm px-3 py-2 rounded-xl ${
-                  p.id === userId
-                    ? "bg-purple-600/40 border border-purple-300/30"
-                    : "bg-white/5 border border-white/10"
-                }`}
-              >
-                <span className="font-medium">
-                  {i + 1}. {p.name}
-                </span>
-                <span className="font-bold">{p.score}</span>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -180,6 +158,30 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
             <span className="text-purple-200">Pick an option to lock in your answer!</span>
           )}
         </div>
+
+        {answerRevealed && (
+          <div className="w-full rounded-3xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl max-h-[300px] overflow-y-auto flex flex-col space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-purple-100/60 mb-2">
+              Leaderboard
+            </p>
+
+            {sortedPlayers.map((p, i) => (
+              <div
+                key={p.id}
+                className={`flex justify-between items-center text-sm px-3 py-2 rounded-xl ${
+                  p.id === userId
+                    ? "bg-purple-600/40 border border-purple-300/30"
+                    : "bg-white/5 border border-white/10"
+                }`}
+              >
+                <span className="font-medium">
+                  {i + 1}. {p.name}
+                </span>
+                <span className="font-bold">{p.score}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="text-sm text-purple-100/60">Game Code: {gameCode}</p>
       </div>
