@@ -76,6 +76,7 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
                 hostUserId: userId,
                 status: "LOBBY",
                 questions: [],
+                currentTheme: "",
                 currentQuestionIndex: -1,
                 currentQuestionStartTime: null,
             });

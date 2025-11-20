@@ -222,6 +222,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
             if (!q.options || q.options.length !== 4) return null;
             return {
               id: `ai-${timestamp}-${i}`,
+              topic,
               question: q.question,
               correctAnswer: q.correctAnswer,
               options: shuffle([...q.options]),
@@ -234,7 +235,11 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         }
 
         const gameDocRef = getGameDocPath(db, gameCode);
-        await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
+        await updateDoc(gameDocRef, {
+          questions: formatted,
+          status: "UPLOAD",
+          currentTheme: topic,
+        });
         setCsvText("");
         setGeneratorTopic(topicOverride ? topic : "");
         setTimeout(() => {
