@@ -157,14 +157,9 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </div>
         </div>
 
-        <div className={`text-6xl font-black ${timeColor}`}>{timeRemaining}s</div>
+        <div className={`text-5xl font-black ${timeColor}`}>{timeRemaining}s</div>
 
         <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-lg font-semibold text-purple-100/80 backdrop-blur-2xl">
-          {answerRevealed && player.lastAnswer && (
-            <span className={isCorrect ? "text-green-300" : "text-rose-300"}>
-              {isCorrect ? "✅ Correct!" : "❌ Incorrect"}
-            </span>
-          )}
           {!answerRevealed && player.lastAnswer && (
             <span className="text-amber-200">✅ Answer locked in. Waiting for reveal...</span>
           )}
