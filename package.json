@@ -21,6 +21,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^16.0.1",
+    "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.21",
     "jsdom": "^25.0.0",
     "postcss": "^8.5.6",
