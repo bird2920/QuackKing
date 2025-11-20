@@ -212,43 +212,43 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
 
       try {
         const aiQuestions = await requestAiQuestions(topic);
-      if (!aiQuestions.length) {
-        throw new Error("AI returned empty response.");
-      }
+        if (!aiQuestions.length) {
+          throw new Error("AI returned empty response.");
+        }
 
-      const timestamp = Date.now();
-      const formatted = aiQuestions
-        .map((q, i) => {
-          if (!q.options || q.options.length !== 4) return null;
-          return {
-            id: `ai-${timestamp}-${i}`,
-            question: q.question,
-            correctAnswer: q.correctAnswer,
-            options: shuffle([...q.options]),
-          };
-        })
-        .filter(Boolean);
+        const timestamp = Date.now();
+        const formatted = aiQuestions
+          .map((q, i) => {
+            if (!q.options || q.options.length !== 4) return null;
+            return {
+              id: `ai-${timestamp}-${i}`,
+              question: q.question,
+              correctAnswer: q.correctAnswer,
+              options: shuffle([...q.options]),
+            };
+          })
+          .filter(Boolean);
 
-      if (formatted.length === 0) {
-        throw new Error("AI did not provide any usable questions.");
-      }
+        if (formatted.length === 0) {
+          throw new Error("AI did not provide any usable questions.");
+        }
 
-      const gameDocRef = getGameDocPath(db, gameCode);
-      await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
+        const gameDocRef = getGameDocPath(db, gameCode);
+        await updateDoc(gameDocRef, { questions: formatted, status: "UPLOAD" });
         setCsvText("");
         setGeneratorTopic(topicOverride ? topic : "");
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 150);
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 150);
       } catch (e) {
-      console.error("AI generation failed:", e);
-      const friendlyMessage =
-        e.code === "AI_DISABLED"
-          ? "AI generator is disabled. Upload CSV questions instead."
-          : `Failed to generate questions: ${e.message}`;
-      setError(friendlyMessage);
+        console.error("AI generation failed:", e);
+        const friendlyMessage =
+          e.code === "AI_DISABLED"
+            ? "AI generator is disabled. Upload CSV questions instead."
+            : `Failed to generate questions: ${e.message}`;
+        setError(friendlyMessage);
       } finally {
         setIsGenerating(false);
       }
@@ -483,6 +483,18 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                     </p>
                   )}
                   <CopyInviteButton gameCode={gameCode} />
+
+                  <div className="pt-4 border-t border-white/10">
+                    <button
+                      onClick={() => window.open(`/#/spectator/${gameCode}`, "_blank")}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-purple-400/30 bg-purple-500/10 px-4 py-3 font-bold text-purple-200 transition hover:bg-purple-500/20 hover:border-purple-400/50"
+                    >
+                      <span className="text-xl">📺</span> Launch TV Mode
+                    </button>
+                    <p className="text-center text-xs text-purple-300/50 mt-2">
+                      Open this on a big screen for players to watch!
+                    </p>
+                  </div>
                 </div>
               </>
             ) : (

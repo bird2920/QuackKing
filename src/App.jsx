@@ -15,6 +15,7 @@ import LobbyScreen from "./screens/LobbyScreen";
 import HostGameScreen from "./screens/HostGameScreen";
 import PlayerGameScreen from "./screens/PlayerGameScreen";
 import ResultsScreen from "./screens/ResultsScreen";
+import SpectatorScreen from "./screens/SpectatorScreen";
 import AccountModal from "./components/AccountModal";
 import { achievementBus, getAchievementService } from "./services/achievements";
 
@@ -192,6 +193,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/game" element={<TriviaGame />} />
         <Route path="/game/:code" element={<TriviaGame prefillFromRoute={true} />} />
+        <Route path="/spectator/:code" element={<SpectatorScreen />} />
       </Routes>
     </HashRouter>
   );

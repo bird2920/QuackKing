@@ -9,8 +9,8 @@ import {
 import { generateGameCode } from "../helpers/codeUtils";
 import { achievementBus } from "../services/achievements";
 
-export function useGameLogic(db, auth, userId, screenName) {
-    const [gameCode, setGameCode] = useState("");
+export function useGameLogic(db, auth, userId, screenName, initialGameCode = "") {
+    const [gameCode, setGameCode] = useState(initialGameCode);
     const [lobbyState, setLobbyState] = useState(null);
     const [players, setPlayers] = useState([]);
     const [mode, setMode] = useState("HOME"); // HOME, LOBBY, GAME, RESULTS
@@ -47,10 +47,12 @@ export function useGameLogic(db, auth, userId, screenName) {
         const unsubPlayers = onSnapshot(
             playersColRef,
             (querySnap) => {
-                const playerList = querySnap.docs.map((d) => ({
-                    id: d.id,
-                    ...d.data(),
-                }));
+                const playerList = querySnap.docs
+                    .map((d) => ({
+                        id: d.id,
+                        ...d.data(),
+                    }))
+                    .filter((p) => !p.isHost); // Filter out host if they exist in DB
                 setPlayers(playerList.sort((a, b) => b.score - a.score));
             },
             (error) => console.error("Error listening to players:", error)
@@ -78,14 +80,8 @@ export function useGameLogic(db, auth, userId, screenName) {
                 currentQuestionStartTime: null,
             });
 
-            const playerDocRef = getPlayerDocPath(db, newCode, userId);
-            await setDoc(playerDocRef, {
-                name: screenName,
-                score: 0,
-                isHost: true,
-                lastAnswer: null,
-                timestamp: Date.now(),
-            });
+            // NOTE: We no longer create a player document for the host.
+            // The host is a "god mode" user, not a participant.
 
             achievementBus.emit({
                 type: "GAME_CREATED",
