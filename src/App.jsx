@@ -104,18 +104,16 @@ function TriviaGame({ prefillFromRoute }) {
   // 🏠 HOME
   if (mode === "HOME" || !userId) {
     activeScreen = (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-        <HomeScreen
-          onJoin={joinGame}
-          onCreate={createGame}
-          screenName={screenName}
-          setScreenName={setScreenName}
-          prefilledCode={prefilledCode}
-          authUser={authUser}
-          onRequestAccount={openAuthModal}
-          onSignOut={handleSignOut}
-        />
-      </div>
+      <HomeScreen
+        onJoin={joinGame}
+        onCreate={createGame}
+        screenName={screenName}
+        setScreenName={setScreenName}
+        prefilledCode={prefilledCode}
+        authUser={authUser}
+        onRequestAccount={openAuthModal}
+        onSignOut={handleSignOut}
+      />
     );
   } else if (lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD") {
     // 🧑‍🤝‍🧑 LOBBY
