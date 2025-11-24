@@ -8,7 +8,10 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [playersWhoAnswered, setPlayersWhoAnswered] = useState(new Set());
-  const [autoHostEnabled, setAutoHostEnabled] = useState(false);
+  const [autoHostEnabled, setAutoHostEnabled] = useState(() => {
+    if (typeof window !== "undefined" && window.__testMode) return false;
+    return true;
+  });
   const [nextQuestionCountdown, setNextQuestionCountdown] = useState(null);
 
   const questionNumber = (lobbyState?.currentQuestionIndex || 0) + 1;
@@ -36,16 +39,27 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     return () => clearInterval(interval);
   }, [lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex]);
 
+  // 🔁 Clear answered tracking when a new question starts to avoid carrying stale answers
+  useEffect(() => {
+    setPlayersWhoAnswered(new Set());
+  }, [lobbyState?.currentQuestionIndex]);
+
   // 👀 Track who answered
   useEffect(() => {
     const answered = new Set();
+    const currentStart = lobbyState?.currentQuestionStartTime || 0;
     players.forEach((p) => {
-      if (p.lastAnswer !== null && p.lastAnswer !== undefined) {
+      const hasAnswer = p.lastAnswer !== null && p.lastAnswer !== undefined;
+      const isCurrentQuestion =
+        typeof p.answerTimestamp === "number"
+          ? p.answerTimestamp >= currentStart
+          : false;
+      if (hasAnswer && isCurrentQuestion) {
         answered.add(p.id);
       }
     });
     setPlayersWhoAnswered(answered);
-  }, [players]);
+  }, [players, lobbyState?.currentQuestionStartTime]);
 
   // 🎯 Reveal Answer
   const handleRevealAnswer = useCallback(async () => {
@@ -92,6 +106,13 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       console.error("❌ Error calculating scores:", err);
     }
   }, [db, gameCode, currentQuestion, lobbyState]);
+
+  // ⏱️ Auto-reveal when timer expires (auto-host)
+  useEffect(() => {
+    if (!autoHostEnabled || revealed) return;
+    if (timeRemaining > 0) return;
+    handleRevealAnswer();
+  }, [autoHostEnabled, revealed, timeRemaining, handleRevealAnswer]);
 
   // ➡️ Next Question
   const handleNextQuestion = useCallback(async () => {

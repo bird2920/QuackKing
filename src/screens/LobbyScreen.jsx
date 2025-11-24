@@ -2,10 +2,16 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
 import { parseCSV } from "../helpers/questionUtils";
 import { requestAiQuestions, getAIStatus } from "../helpers/aiClient";
-import { updateDoc, getDocs, writeBatch } from "firebase/firestore";
+import { updateDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
 import PlayerAchievements from "../components/PlayerAchievements";
 import { achievementBus, getAchievementService } from "../services/achievements";
+
+if (typeof window !== "undefined" && typeof window.setTestMode !== "function") {
+  window.setTestMode = (flag) => {
+    window.__testMode = !!flag;
+  };
+}
 
 const ACHIEVEMENT_ICON_MAP = {
   core_under_1s_correct: "⚡️",
@@ -43,6 +49,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [topicStatus, setTopicStatus] = useState("idle");
   const [topicMessage, setTopicMessage] = useState("");
   const [localUserAchievements, setLocalUserAchievements] = useState([]);
+  const [droppingPlayerId, setDroppingPlayerId] = useState("");
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
 
@@ -162,11 +169,36 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         currentQuestionIndex: 0,
         currentQuestionStartTime: Date.now(),
       });
+      if (typeof window?.setTestMode === "function") {
+        window.setTestMode(false);
+      }
     } catch (e) {
       console.error("❌ Error starting game:", e);
       setError(`Failed to start game: ${e.message}`);
     }
   }, [db, gameCode, isHost, lobbyState]);
+
+  const handleDropPlayer = useCallback(
+    async (playerId, playerName) => {
+      if (!isHost || !db || !gameCode || !playerId) return;
+      const confirmed = window.confirm(
+        `Remove ${playerName || "this player"} from the lobby?`
+      );
+      if (!confirmed) return;
+
+      setDroppingPlayerId(playerId);
+      try {
+        const playerDocRef = getPlayerDocPath(db, gameCode, playerId);
+        await deleteDoc(playerDocRef);
+      } catch (e) {
+        console.error("❌ Error removing player:", e);
+        setError("Failed to drop player. Please try again.");
+      } finally {
+        setDroppingPlayerId("");
+      }
+    },
+    [db, gameCode, isHost]
+  );
 
   // 📄 Upload CSV Questions
   const handleCSVUpload = useCallback(async () => {
@@ -568,11 +600,22 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                     className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-inner shadow-black/20 space-y-2"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-white truncate">{p.name}</span>
-                      <div className="flex gap-2 text-xs font-semibold uppercase tracking-wide">
-                        {p.isHost && <span className="text-purple-300">Host</span>}
-                        {p.id === userId && <span className="text-green-300">You</span>}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-white truncate">{p.name}</span>
+                        <div className="flex gap-2 text-[0.65rem] font-semibold uppercase tracking-wide">
+                          {p.isHost && <span className="text-purple-300">Host</span>}
+                          {p.id === userId && <span className="text-green-300">You</span>}
+                        </div>
                       </div>
+                      {isHost && (
+                        <button
+                          onClick={() => handleDropPlayer(p.id, p.name)}
+                          disabled={droppingPlayerId === p.id}
+                          className="text-xs font-semibold text-rose-200 hover:text-rose-100 disabled:opacity-60"
+                        >
+                          {droppingPlayerId === p.id ? "Removing..." : "Remove"}
+                        </button>
+                      )}
                     </div>
                     {p.id === userId && (
                       <PlayerAchievements playerId={p.id} recentAchievements={localRecentAchievements} />

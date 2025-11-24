@@ -8,6 +8,8 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const player = activePlayers.find((p) => p.id === userId);
   const [selectedAnswer, setSelectedAnswer] = useState(player?.lastAnswer || null);
   const [timeRemaining, setTimeRemaining] = useState(30);
+  const [shouldBounce, setShouldBounce] = useState(false);
+  const [startCountdown, setStartCountdown] = useState(0);
   const questionStartTime = lobbyState?.currentQuestionStartTime ?? null;
   const sortedPlayers = [...activePlayers].sort((a, b) => b.score - a.score);
 
@@ -17,6 +19,23 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
       setSelectedAnswer(null);
     }
   }, [lobbyState?.currentQuestionIndex, player]);
+
+  // 🎯 Scroll bounce effect when reaching bottom without selection
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const isAtBottom = scrollPosition >= documentHeight - 10;
+
+      if (isAtBottom && !selectedAnswer && !player?.lastAnswer) {
+        setShouldBounce(true);
+        setTimeout(() => setShouldBounce(false), 600);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [selectedAnswer, player?.lastAnswer]);
 
   // ⏳ Countdown timer (smooth 0.1s updates)
   useEffect(() => {
@@ -33,6 +52,31 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
     const interval = setInterval(tick, 100);
     return () => clearInterval(interval);
   }, [lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex]);
+
+  // 🚦 Pre-start countdown when the game begins so players can see it
+  useEffect(() => {
+    if (!lobbyState?.currentQuestionStartTime) {
+      setStartCountdown(0);
+      return;
+    }
+    const elapsed = Date.now() - lobbyState.currentQuestionStartTime;
+    const initial = lobbyState.currentQuestionIndex === 0 && !lobbyState.answerRevealed
+      ? Math.max(0, 3 - Math.floor(elapsed / 1000))
+      : 0;
+    setStartCountdown(initial);
+    if (initial === 0) return;
+
+    const interval = setInterval(() => {
+      setStartCountdown((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
+    const timeout = setTimeout(() => setStartCountdown(0), initial * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex, lobbyState?.answerRevealed]);
 
   // 📝 Submit answer
   const handleAnswerSubmit = useCallback(
@@ -106,6 +150,11 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl shadow-2xl shadow-purple-900/40 w-full">
+          {startCountdown > 0 && (
+            <div className="mb-4 rounded-2xl border border-yellow-300/40 bg-yellow-200/10 px-4 py-3 text-yellow-100 font-semibold">
+              Game starting in <span className="text-yellow-300 text-2xl font-black">{startCountdown}s</span> — get ready!
+            </div>
+          )}
           <div className="flex items-center justify-center gap-5">
             <p className="text-sm uppercase tracking-[0.35em] text-purple-100/70">
               Question {questionNumber}
@@ -116,11 +165,11 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </h2>
         </div>
 
-        <div className="w-full rounded-3xl border border-white/5 bg-white/5 p-6 backdrop-blur-2xl shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)]">
+        <div className={`w-full rounded-3xl border border-white/5 bg-white/5 p-6 backdrop-blur-2xl shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)] transition-transform duration-150 ${shouldBounce ? 'animate-bounce-hint' : ''}`}>
           <div className="grid gap-4 sm:grid-cols-2">
             {currentQuestion.options.map((option, i) => {
               const isSelected = selectedAnswer === option;
-              const isLocked = !!player.lastAnswer;
+              const isLocked = !!player.lastAnswer || startCountdown > 0;
               const isCorrectAnswer = option === currentQuestion.correctAnswer;
 
               let optionClasses = "border border-white/15 bg-white/10 text-white";
@@ -158,15 +207,11 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
         </div>
 
         <div className={`text-5xl font-black ${timeColor}`}>{timeRemaining}s</div>
-
-        <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-lg font-semibold text-purple-100/80 backdrop-blur-2xl">
+        
           {!answerRevealed && player.lastAnswer && (
             <span className="text-amber-200">✅ Answer locked in. Waiting for reveal...</span>
           )}
-          {!player.lastAnswer && (
-            <span className="text-purple-200">Pick an option to lock in your answer!</span>
-          )}
-        </div>
+         
 
         {answerRevealed && (
           <div className="w-full rounded-3xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl max-h-[300px] overflow-y-auto flex flex-col space-y-2">
