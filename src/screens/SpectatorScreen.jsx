@@ -22,6 +22,28 @@ export default function SpectatorScreen() {
         return [...players].sort((a, b) => b.score - a.score);
     }, [players]);
 
+    // 🕒 Timer Logic (Must be at top level)
+    const [timeLeft, setTimeLeft] = React.useState(30);
+
+    // 🔤 Stable sort for grid (Alphabetical)
+    const gridPlayers = useMemo(() => {
+        return [...players].sort((a, b) => a.name.localeCompare(b.name));
+    }, [players]);
+
+    React.useEffect(() => {
+        if (lobbyState?.status !== "PLAYING" || !lobbyState?.currentQuestionStartTime) return;
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const start = lobbyState.currentQuestionStartTime;
+            const elapsed = (now - start) / 1000;
+            const remaining = Math.max(0, 30 - elapsed);
+            setTimeLeft(remaining);
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [lobbyState?.status, lobbyState?.currentQuestionStartTime]);
+
     if (!lobbyState) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -83,36 +105,89 @@ export default function SpectatorScreen() {
 
     // 🎮 GAME VIEW
     if (lobbyState.status === "PLAYING") {
+        const rawTheme =
+            currentQuestion?.topic ||
+            currentQuestion?.theme ||
+            lobbyState?.currentTheme ||
+            lobbyState?.theme ||
+            lobbyState?.topic ||
+            "Stealth Mode";
+        const currentTheme = typeof rawTheme === "string" ? rawTheme.trim() : "";
+        const hasTheme = currentTheme.length > 0;
+
         return (
             <div className="min-h-screen bg-slate-900 text-white flex flex-col p-8">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-12">
+                <div className="flex justify-between items-center mb-8">
                     <div className="text-2xl font-bold text-purple-400">
-                        Round {lobbyState.currentQuestionIndex + 1} / {lobbyState.questions.length}
+                        Round {lobbyState.currentQuestionIndex + 1} / {lobbyState.questions?.length || 0}
                     </div>
                     <div className="text-4xl font-black tracking-widest">{code}</div>
+                    <div className={`text-4xl font-black ${timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-white"}`}>
+                        {Math.ceil(timeLeft)}s
+                    </div>
                 </div>
 
                 {/* Question */}
-                <div className="flex-1 flex flex-col items-center justify-center text-center space-y-12">
-                    <h2 className="text-6xl font-bold leading-tight max-w-5xl drop-shadow-2xl">
+                <div className="mb-12 text-center flex flex-col items-center">
+                    {hasTheme && (
+                        <div className="inline-flex items-center gap-2 mb-6 rounded-2xl border border-white/20 bg-white/5 px-6 py-2 text-lg uppercase tracking-[0.25em] text-purple-100/70">
+                            <span className="text-yellow-200 font-semibold tracking-[0.25em]">Theme</span>
+                            <span className="text-white/90 font-semibold normal-case tracking-normal">{currentTheme}</span>
+                        </div>
+                    )}
+                    <h2 className="text-5xl font-bold leading-tight max-w-6xl mx-auto drop-shadow-2xl">
                         {currentQuestion?.question}
                     </h2>
+                </div>
 
-                    {/* Answer Progress */}
-                    <div className="w-full max-w-4xl space-y-4">
-                        <div className="flex justify-between text-2xl font-bold text-purple-200">
-                            <span>Answers In</span>
-                            <span>{answeredCount} / {players.length}</span>
-                        </div>
-                        <div className="h-8 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                            <div
-                                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500 ease-out"
-                                style={{ width: `${(answeredCount / players.length) * 100}%` }}
-                            />
-                        </div>
+                {/* Player Grid (Pressure Cooker) */}
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="flex flex-wrap justify-center gap-6 max-w-7xl">
+                        {gridPlayers.map((p) => {
+                            const hasAnswered = p.lastAnswer !== null;
+                            const isPulsing = !hasAnswered && timeLeft <= 10;
+                            // Speed up pulse as time runs out (1s down to 0.2s)
+                            const pulseDuration = isPulsing
+                                ? `${Math.max(0.2, timeLeft / 10)}s`
+                                : '0s';
+
+                            return (
+                                <div
+                                    key={p.id}
+                                    style={{
+                                        animation: isPulsing ? `pressurePulse ${pulseDuration} infinite` : 'none'
+                                    }}
+                                    className={`
+                                        relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300
+                                        ${hasAnswered
+                                            ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                                            : "bg-slate-800 border-slate-700 shadow-lg"
+                                        }
+                                    `}
+                                >
+                                    <div className={`text-2xl font-bold truncate max-w-full px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
+                                        {p.name}
+                                    </div>
+                                    {hasAnswered && (
+                                        <div className="absolute -top-3 -right-3 bg-white text-green-600 rounded-full p-1 shadow-lg">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
+
+                <style>{`
+                    @keyframes pressurePulse {
+                        0%, 100% { transform: scale(1); border-color: rgb(51, 65, 85); }
+                        50% { transform: scale(0.95); border-color: rgb(239, 68, 68); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -153,5 +228,17 @@ export default function SpectatorScreen() {
         );
     }
 
-    return null;
+    // Fallback/Debug View
+    return (
+        <div className="min-h-screen bg-slate-950 text-white p-8 flex flex-col items-center justify-center">
+            <h1 className="text-2xl font-bold text-red-400 mb-4">Unknown Game Status</h1>
+            <p className="mb-4">Status: <span className="font-mono bg-slate-800 px-2 py-1 rounded">{lobbyState.status}</span></p>
+            <details className="w-full max-w-2xl bg-slate-900 p-4 rounded-lg overflow-auto max-h-96">
+                <summary className="cursor-pointer mb-2 font-bold text-slate-400">Debug Data</summary>
+                <pre className="text-xs font-mono text-slate-300">
+                    {JSON.stringify(lobbyState, null, 2)}
+                </pre>
+            </details>
+        </div>
+    );
 }

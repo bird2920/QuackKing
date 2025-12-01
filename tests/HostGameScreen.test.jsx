@@ -11,7 +11,7 @@ vi.mock('firebase/firestore', () => {
     getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
     writeBatch: vi.fn(() => ({
       update: vi.fn(),
-      commit: vi.fn(async () => {}),
+      commit: vi.fn(async () => { }),
     })),
     doc,
     collection,
@@ -82,7 +82,7 @@ describe('HostGameScreen', () => {
 
     await screen.findByText('Players Answered: 0 / 2');
 
-    await act(async () => {});
+    await act(async () => { });
 
     expect(updateDoc).not.toHaveBeenCalledWith(
       expect.anything(),
@@ -131,8 +131,7 @@ describe('HostGameScreen', () => {
     );
   });
 
-  it('defaults auto-host off when test mode flag is set', () => {
-    window.__testMode = true;
+  it('shows auto-host as off when lobbyState.autoHost is false', () => {
     const lobbyState = {
       status: 'PLAYING',
       hostUserId: 'host-1',
@@ -140,6 +139,7 @@ describe('HostGameScreen', () => {
       currentQuestionStartTime: Date.now(),
       answerRevealed: false,
       questions: baseQuestions,
+      autoHost: false,
     };
     const players = [
       { id: 'p1', name: 'One', score: 0, lastAnswer: null },

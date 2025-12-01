@@ -1,6 +1,6 @@
-# 🎮 Smartish – Real-Time Multiplayer Trivia
+# 🎮 QuackKing – Real-Time Multiplayer Trivia
 
-Smartish is a Jackbox-style trivia experience built with React, Vite, Tailwind CSS, and Firebase. Hosts spin up a lobby, invite friends with a four-letter code, load or generate questions, and run the entire show from one screen while players answer from any device.
+QuackKing is a Jackbox-style trivia experience built with React, Vite, Tailwind CSS, and Firebase. Hosts spin up a lobby, invite friends with a four-letter code, load or generate questions, and run the entire show from one screen while players answer from any device.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Firebase](https://img.shields.io/badge/firebase-10.12-orange.svg)
@@ -67,7 +67,7 @@ Helpful references:
 ## ⚙️ Configuration
 
 ### Firebase
-Smartish expects a global config object before React mounts. In `index.html`:
+QuackKing expects a global config object before React mounts. In `index.html`:
 ```html
 <script>
   window.__firebase_config = JSON.stringify({

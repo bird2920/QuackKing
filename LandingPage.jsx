@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import QuackKingLogo from "./src/components/QuackKingLogo.jsx";
 
 const TAGLINES = [
     "Are your friends as smart as they think they are?",
@@ -36,7 +37,7 @@ const LandingPage = () => {
                     {/* Logo/Title */}
                     <div className="space-y-3">
                         <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]">
-                            Smartish
+                            <QuackKingLogo />
                         </h1>
                         <p className="text-2xl sm:text-3xl text-purple-100/80 font-semibold">{tagline}</p>
                     </div>

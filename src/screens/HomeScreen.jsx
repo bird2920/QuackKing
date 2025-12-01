@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import QuackKingLogo from "../components/QuackKingLogo.jsx";
 
 const CODE_LENGTH = 4;
 const sanitizeCode = (value = "") =>
@@ -161,7 +162,7 @@ export default function HomeScreen({
               Join or host
             </div>
             <h1 className="text-5xl sm:text-6xl font-black tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]">
-              Smartish
+              <QuackKingLogo />
             </h1>
             <p className="text-lg sm:text-xl text-purple-100/80 font-semibold">
               Jump into a live party with a 4-letter code, or spin up your own lobby in seconds.
@@ -248,7 +249,7 @@ export default function HomeScreen({
             <div className="text-center text-sm text-purple-100/70">
               {authUser && !authUser.isAnonymous ? (
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <span>Signed in as {authUser.email || "Smartish player"}</span>
+                  <span>Signed in as {authUser.email || "QuackKing player"}</span>
                   <button
                     type="button"
                     onClick={() => onSignOut?.()}

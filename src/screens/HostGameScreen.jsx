@@ -8,10 +8,9 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
   const [revealed, setRevealed] = useState(lobbyState?.answerRevealed || false);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [playersWhoAnswered, setPlayersWhoAnswered] = useState(new Set());
-  const [autoHostEnabled, setAutoHostEnabled] = useState(() => {
-    if (typeof window !== "undefined" && window.__testMode) return false;
-    return true;
-  });
+  const autoHostEnabled = lobbyState?.autoHost ?? true;
+  const revealTime = lobbyState?.timerSettings?.revealTime ?? 30;
+  const nextQuestionTime = lobbyState?.timerSettings?.nextQuestionTime ?? 3;
   const [nextQuestionCountdown, setNextQuestionCountdown] = useState(null);
 
   const questionNumber = (lobbyState?.currentQuestionIndex || 0) + 1;
@@ -30,7 +29,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     const startTime = lobbyState.currentQuestionStartTime;
     const tick = () => {
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 30 - Math.floor(elapsed / 1000));
+      const remaining = Math.max(0, revealTime - Math.floor(elapsed / 1000));
       setTimeRemaining(remaining);
     };
 
@@ -212,7 +211,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
         return;
       }
 
-      setNextQuestionCountdown(3);
+      setNextQuestionCountdown(nextQuestionTime);
       const countdownInterval = setInterval(() => {
         setNextQuestionCountdown((prev) => {
           if (prev === null) return null;
@@ -222,7 +221,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
 
       const endTimeout = setTimeout(() => {
         handleEndGame();
-      }, 3000);
+      }, nextQuestionTime * 1000);
 
       return () => {
         clearInterval(countdownInterval);
@@ -230,7 +229,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       };
     }
 
-    setNextQuestionCountdown(3);
+    setNextQuestionCountdown(nextQuestionTime);
     const countdownInterval = setInterval(() => {
       setNextQuestionCountdown((prev) => {
         if (prev === null) return null;
@@ -240,7 +239,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
 
     const advanceTimeout = setTimeout(() => {
       handleNextQuestion();
-      }, 3000);
+    }, nextQuestionTime * 1000);
 
     return () => {
       clearInterval(countdownInterval);
@@ -329,11 +328,10 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
               return (
                 <div
                   key={p.id}
-                  className={`p-2 rounded text-sm font-medium text-center ${
-                    hasAnswered
+                  className={`p-2 rounded text-sm font-medium text-center ${hasAnswered
                       ? "bg-green-700 text-white"
                       : "bg-gray-700 text-gray-400"
-                  }`}
+                    }`}
                 >
                   {p.name} {hasAnswered && "✓"}
                 </div>
@@ -350,10 +348,12 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
             <p className="text-sm text-gray-400">Reveal & advance automatically</p>
           </div>
           <button
-            onClick={() => setAutoHostEnabled((prev) => !prev)}
-            className={`px-4 py-2 rounded-lg font-bold transition ${
-              autoHostEnabled ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"
-            }`}
+            onClick={() => {
+              const gameDocRef = getGameDocPath(db, gameCode);
+              updateDoc(gameDocRef, { autoHost: !autoHostEnabled });
+            }}
+            className={`px-4 py-2 rounded-lg font-bold transition ${autoHostEnabled ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"
+              }`}
           >
             {autoHostEnabled ? "On" : "Off"}
           </button>

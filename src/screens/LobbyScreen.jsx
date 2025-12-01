@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath } from "../helpers/firebasePaths";
+import { getGameDocPath, getPlayersCollectionPath, getPlayerDocPath, getUserSettingsDocPath } from "../helpers/firebasePaths";
 import { parseCSV } from "../helpers/questionUtils";
 import { requestAiQuestions, getAIStatus } from "../helpers/aiClient";
-import { updateDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
+import { updateDoc, getDocs, writeBatch, deleteDoc, setDoc } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
 import PlayerAchievements from "../components/PlayerAchievements";
 import { achievementBus, getAchievementService } from "../services/achievements";
@@ -454,6 +454,125 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                     {error}
                   </div>
                 )}
+
+                {/* Host Settings */}
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-emerald-200/80 flex items-center gap-2">
+                        <span role="img" aria-label="gear">⚙️</span>
+                        Game Settings
+                      </p>
+                      <h3 className="text-2xl font-bold mt-2">Host Controls</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Auto-Host Toggle */}
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div>
+                          <p className="font-semibold text-white">Auto-Host Mode</p>
+                          <p className="text-xs text-purple-200/60">Automatically reveal & advance</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const currentAuto = lobbyState?.autoHost ?? true;
+                            const newAuto = !currentAuto;
+                            const gameDocRef = getGameDocPath(db, gameCode);
+                            updateDoc(gameDocRef, { autoHost: newAuto });
+
+                            // Persist to user profile
+                            if (userId) {
+                              console.log('💾 Saving autoHost:', newAuto, 'for user:', userId);
+                              const userSettingsRef = getUserSettingsDocPath(db, userId);
+                              setDoc(userSettingsRef, {
+                                hostSettings: { autoHost: newAuto }
+                              }, { merge: true })
+                                .then(() => console.log('✅ Saved autoHost successfully'))
+                                .catch(err => console.error("❌ Failed to save user settings:", err));
+                            }
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${(lobbyState?.autoHost ?? true) ? 'bg-emerald-500' : 'bg-slate-700'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(lobbyState?.autoHost ?? true) ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Timer Settings */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold text-purple-200/80 uppercase tracking-wider">
+                            Question Timer
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="5"
+                              max="120"
+                              value={lobbyState?.timerSettings?.revealTime ?? 30}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) {
+                                  const gameDocRef = getGameDocPath(db, gameCode);
+                                  updateDoc(gameDocRef, { "timerSettings.revealTime": val });
+
+                                  // Persist to user profile
+                                  if (userId) {
+                                    console.log('💾 Saving revealTime:', val, 'for user:', userId);
+                                    const userSettingsRef = getUserSettingsDocPath(db, userId);
+                                    setDoc(userSettingsRef, {
+                                      hostSettings: { revealTime: val }
+                                    }, { merge: true })
+                                      .then(() => console.log('✅ Saved revealTime successfully'))
+                                      .catch(err => console.error("❌ Failed to save user settings:", err));
+                                  }
+                                }
+                              }}
+                              className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                            <span className="absolute right-3 top-2 text-xs text-purple-200/50">sec</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold text-purple-200/80 uppercase tracking-wider">
+                            Next Question
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="1"
+                              max="60"
+                              value={lobbyState?.timerSettings?.nextQuestionTime ?? 3}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) {
+                                  const gameDocRef = getGameDocPath(db, gameCode);
+                                  updateDoc(gameDocRef, { "timerSettings.nextQuestionTime": val });
+
+                                  // Persist to user profile
+                                  if (userId) {
+                                    console.log('💾 Saving nextQuestionTime:', val, 'for user:', userId);
+                                    const userSettingsRef = getUserSettingsDocPath(db, userId);
+                                    setDoc(userSettingsRef, {
+                                      hostSettings: { nextQuestionTime: val }
+                                    }, { merge: true })
+                                      .then(() => console.log('✅ Saved nextQuestionTime successfully'))
+                                      .catch(err => console.error("❌ Failed to save user settings:", err));
+                                  }
+                                }
+                              }}
+                              className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                            <span className="absolute right-3 top-2 text-xs text-purple-200/50">sec</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/40">
                   <div>

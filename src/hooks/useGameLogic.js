@@ -5,6 +5,7 @@ import {
     getGameDocPath,
     getPlayersCollectionPath,
     getPlayerDocPath,
+    getUserSettingsDocPath,
 } from "../helpers/firebasePaths";
 import { generateGameCode } from "../helpers/codeUtils";
 import { achievementBus } from "../services/achievements";
@@ -71,6 +72,30 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
         const gameDocRef = getGameDocPath(db, newCode);
 
         try {
+            let initialTimerSettings = { revealTime: 30, nextQuestionTime: 3 };
+            let initialAutoHost = true;
+
+            try {
+                console.log('🔍 Loading user settings for:', userId);
+                const userSettingsDoc = await getDoc(getUserSettingsDocPath(db, userId));
+                if (userSettingsDoc.exists()) {
+                    const data = userSettingsDoc.data();
+                    console.log('📖 Found user settings:', data);
+                    if (data.hostSettings) {
+                        initialTimerSettings = { ...initialTimerSettings, ...data.hostSettings };
+                        // Ensure autoHost is boolean if present
+                        if (typeof data.hostSettings.autoHost === 'boolean') {
+                            initialAutoHost = data.hostSettings.autoHost;
+                        }
+                        console.log('✅ Loaded settings - Timer:', initialTimerSettings, 'AutoHost:', initialAutoHost);
+                    }
+                } else {
+                    console.log('ℹ️ No saved settings found, using defaults');
+                }
+            } catch (err) {
+                console.warn("❌ Failed to load user host settings, using defaults:", err);
+            }
+
             await setDoc(gameDocRef, {
                 gameCode: newCode,
                 hostUserId: userId,
@@ -79,6 +104,8 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
                 currentTheme: "",
                 currentQuestionIndex: -1,
                 currentQuestionStartTime: null,
+                timerSettings: initialTimerSettings,
+                autoHost: initialAutoHost,
             });
 
             // NOTE: We no longer create a player document for the host.
