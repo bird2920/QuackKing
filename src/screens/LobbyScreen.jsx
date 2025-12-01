@@ -26,18 +26,66 @@ const ACHIEVEMENT_ICON_MAP = {
   core_scholar_mode_activated: "📚",
 };
 
-const THEME_SUGGESTION_POOL = [
+const CURATED_THEME_SUGGESTIONS = [
+  "Classic Rock",
+  "90s Pop Culture",
+  "80s Movies",
+  "Sci-Fi Cinema",
+  "Fantasy Worlds",
+  "Space Exploration",
   "World Capitals",
-  "90s Cartoons",
-  "Space Race",
-  "Food Trivia",
-  "Pop Culture",
-  "Video Games",
+  "Geography by Landmarks",
+  "U.S. State Facts",
+  "National Parks",
+  "Ocean Creatures",
   "Mythical Creatures",
-  "Sports Legends",
+  "Greek Mythology",
+  "Norse Mythology",
+  "Egyptian Mythology",
+  "Medieval History",
+  "Ancient Civilizations",
+  "Famous Explorers",
+  "Pirates & Sea Legends",
+  "The Wild West",
+  "Inventors & Inventions",
+  "Tech History",
+  "AI & The Future",
+  "Internet Nostalgia",
+  "Video Game Classics",
+  "Console Wars",
+  "Esports Legends",
+  "Minecraft Mastery",
+  "Nintendo Universe",
+  "PlayStation Icons",
+  "Xbox Era Trivia",
+  "Arcade Retro",
+  "Food Around the World",
+  "Desserts & Sweets",
+  "Coffee Culture",
+  "Soda Showdown",
+  "Holiday Traditions",
+  "Christmas Movie Quotes",
+  "Halloween Spooky Facts",
+  "Thanksgiving Oddities",
+  "Disney Animated Era",
+  "Pixar Deep Cuts",
+  "DreamWorks Films",
+  "Studio Ghibli Magic",
+  "Superheroes (Marvel)",
+  "Superheroes (DC)",
+  "Villains We Love",
   "Movie Soundtracks",
-  "Science Fair Winners",
+  "Band Lyric Battles",
+  "Encyclopedia of Random",
 ];
+
+const sliceSuggestions = (list, startIndex, count) => {
+  if (!list.length) return [];
+  const start = startIndex % list.length;
+  const end = start + count;
+  if (end <= list.length) return list.slice(start, end);
+  return [...list.slice(start), ...list.slice(0, end - list.length)];
+};
 
 // Lobby screen allows host to upload or generate questions and start game.
 export default function LobbyScreen({ db, gameCode, lobbyState, players, userId, isHost }) {
@@ -50,6 +98,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [topicMessage, setTopicMessage] = useState("");
   const [localUserAchievements, setLocalUserAchievements] = useState([]);
   const [droppingPlayerId, setDroppingPlayerId] = useState("");
+  const [hostSuggestionIndex, setHostSuggestionIndex] = useState(0);
+  const [playerSuggestionIndex, setPlayerSuggestionIndex] = useState(0);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
 
@@ -68,14 +118,14 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
-  const hostThemeSuggestions = useMemo(() => {
-    const shuffled = [...THEME_SUGGESTION_POOL];
-    for (let i = shuffled.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, 5);
-  }, []);
+  const hostThemeSuggestions = useMemo(
+    () => sliceSuggestions(CURATED_THEME_SUGGESTIONS, hostSuggestionIndex, 5),
+    [hostSuggestionIndex]
+  );
+  const playerThemeSuggestions = useMemo(
+    () => sliceSuggestions(CURATED_THEME_SUGGESTIONS, playerSuggestionIndex, 6),
+    [playerSuggestionIndex]
+  );
   const localRecentAchievements = useMemo(() => {
     if (!localUserAchievements.length) return [];
     return [...localUserAchievements]
@@ -296,6 +346,14 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   // 🔀 Simple shuffle
   const shuffle = (array) => array.sort(() => Math.random() - 0.5);
 
+  const cycleHostSuggestions = useCallback(() => {
+    setHostSuggestionIndex((prev) => (prev + 5) % CURATED_THEME_SUGGESTIONS.length);
+  }, []);
+
+  const cyclePlayerSuggestions = useCallback(() => {
+    setPlayerSuggestionIndex((prev) => (prev + 6) % CURATED_THEME_SUGGESTIONS.length);
+  }, []);
+
   // 💡 Player topic suggestion
   const handleSubmitSuggestion = useCallback(async () => {
     if (isHost || !db || !userId || !gameCode || !topicInput.trim()) return;
@@ -390,10 +448,20 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               </>
                             )}
                           </button>
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mt-4 mb-2">
-                              Quick ideas
-                            </p>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">
+                                Quick ideas
+                              </p>
+                              <button
+                                type="button"
+                                onClick={cycleHostSuggestions}
+                                disabled={isGenerating}
+                                className="text-[11px] font-semibold text-amber-100/90 underline-offset-4 hover:underline disabled:opacity-50"
+                              >
+                                Next
+                              </button>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                               {hostThemeSuggestions.map((idea) => (
                                 <button
@@ -683,10 +751,19 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                       {topicMessage}
                     </p>
                   )}
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80 mb-2">Quick ideas</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">Quick ideas</p>
+                      <button
+                        type="button"
+                        onClick={cyclePlayerSuggestions}
+                        className="text-[11px] font-semibold text-amber-100/90 underline-offset-4 hover:underline"
+                      >
+                        Next
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {THEME_SUGGESTION_POOL.map((idea) => (
+                      {playerThemeSuggestions.map((idea) => (
                         <button
                           key={idea}
                           onClick={() => setTopicInput(idea)}
