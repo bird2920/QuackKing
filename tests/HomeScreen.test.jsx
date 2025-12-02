@@ -7,7 +7,7 @@ describe('HomeScreen', () => {
   it('renders title and buttons disabled appropriately', () => {
     const noop = () => {};
     render(<HomeScreen onJoin={noop} onCreate={noop} screenName="" setScreenName={noop} prefilledCode={null} />);
-    expect(screen.getByText('QuackKing')).toBeInTheDocument();
+    expect(screen.getByAltText(/QuackKing logo/i)).toBeInTheDocument();
     const joinBtn = screen.getByText('Join');
     expect(joinBtn).toBeDisabled();
     const createBtn = screen.getByText('Create Game');

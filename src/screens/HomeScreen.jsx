@@ -20,6 +20,7 @@ export default function HomeScreen({
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
   const [pendingFocusIndex, setPendingFocusIndex] = useState(null);
+  const [logoFailed, setLogoFailed] = useState(false);
   const nameInputRef = useRef(null);
   const codeInputRefs = useRef([]);
   const autoFocusLockRef = useRef(false);
@@ -161,8 +162,17 @@ export default function HomeScreen({
               <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
               Join or host
             </div>
-            <h1 className="text-5xl sm:text-6xl font-black tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]">
-              <QuackKingLogo />
+            <h1 className="flex justify-center">
+              {!logoFailed ? (
+                <img
+                  src="/QuackKing.svg"
+                  alt="QuackKing logo with crown"
+                  onError={() => setLogoFailed(true)}
+                  className="h-14 sm:h-16 drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]"
+                />
+              ) : (
+                <QuackKingLogo className="text-5xl sm:text-6xl font-black tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]" />
+              )}
             </h1>
             <p className="text-lg sm:text-xl text-purple-100/80 font-semibold">
               Jump into a live party with a 4-letter code, or spin up your own lobby in seconds.

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QuackKingLogo from "./src/components/QuackKingLogo.jsx";
 
@@ -16,6 +16,7 @@ const TAGLINES = [
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const [logoFailed, setLogoFailed] = useState(false);
     const tagline = useMemo(
         () => TAGLINES[Math.floor(Math.random() * TAGLINES.length)],
         []
@@ -36,17 +37,36 @@ const LandingPage = () => {
 
                     {/* Logo/Title */}
                     <div className="space-y-3">
-                        <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]">
-                            <QuackKingLogo />
+                        <h1 className="flex justify-center">
+                            {!logoFailed ? (
+                                <img
+                                    src="/QuackKing.svg"
+                                    alt="QuackKing logo with crown"
+                                    onError={() => setLogoFailed(true)}
+                                    className="h-16 sm:h-20 md:h-32 drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]"
+                                />
+                            ) : (
+                                <QuackKingLogo className="text-6xl sm:text-7xl md:text-8xl font-black text-white tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]" />
+                            )}
                         </h1>
                         <p className="text-2xl sm:text-3xl text-purple-100/80 font-semibold">{tagline}</p>
                     </div>
 
                     {/* Description */}
                     <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] border border-white/10 space-y-8">
-                        <p className="text-lg sm:text-xl leading-relaxed text-white/90 max-w-3xl mx-auto">
-                            Host multiplayer parties with your friends. One person kicks things off, everyone else joins with a four-letter code, and you all battle it out live on your own devices.
-                        </p>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 max-w-4xl mx-auto">
+                            <div className="relative flex-shrink-0">
+                                <div className="absolute inset-[-10px] sm:inset-[-14px] rounded-full bg-gradient-to-br from-amber-300/60 via-orange-300/40 to-amber-500/30 blur-2xl" />
+                                <img
+                                    src="/FavoriteDuck.svg"
+                                    alt="QuackKing mascot duck wearing a crown"
+                                    className="relative w-28 sm:w-30 drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]"
+                                />
+                            </div>
+                            <p className="text-lg sm:text-xl leading-relaxed text-white/90">
+                                Host multiplayer trivia parties with your friends. One person kicks things off, everyone else joins with a four-letter code, and you all battle it out live on your own devices.
+                            </p>
+                        </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 shadow-lg">
