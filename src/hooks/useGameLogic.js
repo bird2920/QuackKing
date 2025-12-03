@@ -10,7 +10,45 @@ import {
 import { generateGameCode } from "../helpers/codeUtils";
 import { achievementBus } from "../services/achievements";
 
-export function useGameLogic(db, auth, userId, screenName, initialGameCode = "") {
+const SESSION_STORAGE_KEY = "trivia:lastSession";
+
+const readPersistedSession = () => {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+        console.warn("Failed to read session cache:", err);
+        return null;
+    }
+};
+
+const persistSession = (payload) => {
+    if (typeof window === "undefined") return;
+    try {
+        window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+        console.warn("Failed to persist session cache:", err);
+    }
+};
+
+const clearPersistedSession = () => {
+    if (typeof window === "undefined") return;
+    try {
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (err) {
+        console.warn("Failed to clear session cache:", err);
+    }
+};
+
+export function useGameLogic(
+    db,
+    auth,
+    userId,
+    screenName,
+    initialGameCode = "",
+    resumeGuardCode = null
+) {
     const [gameCode, setGameCode] = useState(initialGameCode);
     const [lobbyState, setLobbyState] = useState(null);
     const [players, setPlayers] = useState([]);
@@ -38,6 +76,7 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
                     setLobbyState(null);
                     setPlayers([]);
                     setGameCode("");
+                    clearPersistedSession();
                     setMode("HOME");
                 }
             },
@@ -65,9 +104,54 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
         };
     }, [db, gameCode, mode]);
 
+    // 🔄 Auto-resume if we have a cached session (helps mobile users returning mid-game)
+    useEffect(() => {
+        if (!db || !userId || gameCode) return;
+        // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
+        if (resumeGuardCode) return;
+        const cached = readPersistedSession();
+        if (!cached || cached.userId !== userId || !cached.gameCode) return;
+        // Hosts want to start new games; never auto-resume host sessions.
+        if (cached.role === "host") {
+            clearPersistedSession();
+            return;
+        }
+
+        let isCancelled = false;
+        (async () => {
+            try {
+                const gameDocRef = getGameDocPath(db, cached.gameCode);
+                const checks = [getDoc(gameDocRef)];
+                if (cached.role !== "host") {
+                    checks.push(getDoc(getPlayerDocPath(db, cached.gameCode, userId)));
+                }
+                const [gameSnap, playerSnap] = await Promise.all(checks);
+                const gameExists = gameSnap?.exists();
+                const playerExists = cached.role === "host" ? true : playerSnap?.exists();
+
+                if (!gameExists || !playerExists) {
+                    clearPersistedSession();
+                    return;
+                }
+
+                if (isCancelled) return;
+                setGameCode(cached.gameCode);
+                // Mode will be updated once the snapshot listener fires
+            } catch (err) {
+                console.warn("Failed to auto-resume session:", err);
+            }
+        })();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [db, userId, gameCode, resumeGuardCode]);
+
     // 🧩 Game Setup
     const createGame = useCallback(async () => {
         if (!db || !userId || !screenName.trim()) return;
+        // Clear any cached session so the host can start fresh.
+        clearPersistedSession();
         const newCode = generateGameCode();
         const gameDocRef = getGameDocPath(db, newCode);
 
@@ -136,13 +220,27 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
             }
 
             const game = snap.data();
+            const playerDocRef = getPlayerDocPath(db, normalized, userId);
+            const existingPlayer = await getDoc(playerDocRef);
+
             if (!["LOBBY", "UPLOAD"].includes(game.status)) {
-                console.log("🚫 Game already in progress.");
+                if (existingPlayer.exists()) {
+                    // Reattach to an in-progress game using the same player record
+                    persistSession({
+                        role: "player",
+                        gameCode: normalized,
+                        screenName: existingPlayer.data()?.name || screenName.trim(),
+                        userId,
+                    });
+                    setGameCode(normalized);
+                    setMode("LOBBY");
+                } else {
+                    console.log("🚫 Game already in progress.");
+                }
                 return;
             }
 
             try {
-                const playerDocRef = getPlayerDocPath(db, normalized, userId);
                 await setDoc(playerDocRef, {
                     name: screenName,
                     score: 0,
@@ -154,6 +252,13 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
                 achievementBus.emit({
                     type: "GAME_JOINED",
                     data: { userId, gameId: normalized },
+                });
+
+                persistSession({
+                    role: "player",
+                    gameCode: normalized,
+                    screenName: screenName.trim(),
+                    userId,
                 });
 
                 setGameCode(normalized);
@@ -172,6 +277,7 @@ export function useGameLogic(db, auth, userId, screenName, initialGameCode = "")
             setGameCode("");
             setLobbyState(null);
             setPlayers([]);
+            clearPersistedSession();
             setMode("HOME");
         } catch (err) {
             console.error("Failed to sign out:", err);

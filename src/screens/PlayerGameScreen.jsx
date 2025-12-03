@@ -127,20 +127,20 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const hasTheme = currentTheme.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
-      <div className="mx-auto flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
-        <div className="space-y-2">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-6 sm:py-10">
+      <div className="mx-auto flex w-full max-w-4xl flex-col items-center space-y-6 sm:space-y-8 text-center">
+        <div className="space-y-1.5">
           {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-purple-100/70">
             Player View
           </div> */}
-          <h1 className="text-3xl md:text-4xl font-black">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black">
             {player.name}
-            <span className="ml-2 text-base font-semibold text-purple-100/80">
+            <span className="ml-2 text-sm sm:text-base font-semibold text-purple-100/80">
               • {player.score} pts
             </span>
-            <div className="w-full my-2 border-t border-white/10">
+            <div className="w-full my-1.5 border-t border-white/10">
             {hasTheme && (
-              <div className="inline-flex items-center gap-2 mt-3 rounded-2xl border border-white/20 bg-white/5 px-4 py-1 text-base uppercase tracking-[0.25em] text-purple-100/70">
+              <div className="inline-flex items-center gap-2 mt-3 rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-xs sm:text-sm uppercase tracking-[0.25em] text-purple-100/70">
                 <span className="text-yellow-200 font-semibold tracking-[0.25em]">Theme</span>
                 <span className="text-white/90 font-semibold normal-case tracking-normal">{currentTheme}</span>
               </div>
@@ -149,24 +149,25 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </h1>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl shadow-2xl shadow-purple-900/40 w-full">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-6 backdrop-blur-2xl shadow-2xl shadow-purple-900/40 w-full">
           {startCountdown > 0 && (
-            <div className="mb-4 rounded-2xl border border-yellow-300/40 bg-yellow-200/10 px-4 py-3 text-yellow-100 font-semibold">
-              Game starting in <span className="text-yellow-300 text-2xl font-black">{startCountdown}s</span> — get ready!
+            <div className="mb-3 rounded-2xl border border-yellow-300/40 bg-yellow-200/10 px-4 py-3 text-yellow-100 font-semibold">
+              Game starting in <span className="text-yellow-300 text-xl sm:text-2xl font-black">{startCountdown}s</span> — get ready!
             </div>
           )}
-          <div className="flex items-center justify-center gap-5">
-            <p className="text-sm uppercase tracking-[0.35em] text-purple-100/70">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[0.8rem] sm:text-sm uppercase tracking-[0.35em] text-purple-100/70">
               Question {questionNumber}
             </p>
+            <div className={`text-3xl sm:text-4xl font-black ${timeColor}`}>{timeRemaining}s</div>
           </div>
-          <h2 className="mt-3 text-center text-2xl font-semibold leading-snug text-white md:text-3xl">
+          <h2 className="mt-2 text-center text-xl sm:text-2xl md:text-3xl font-semibold leading-relaxed text-white">
             {currentQuestion.question}
           </h2>
         </div>
 
-        <div className={`w-full rounded-3xl border border-white/5 bg-white/5 p-6 backdrop-blur-2xl shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)] transition-transform duration-150 ${shouldBounce ? 'animate-bounce-hint' : ''}`}>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className={`w-full rounded-3xl border border-white/5 bg-white/5 p-4 sm:p-6 backdrop-blur-2xl shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)] transition-transform duration-150 ${shouldBounce ? 'animate-bounce-hint' : ''}`}>
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
             {currentQuestion.options.map((option, i) => {
               const isSelected = selectedAnswer === option;
               const isLocked = !!player.lastAnswer || startCountdown > 0;
@@ -197,7 +198,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
                   key={i}
                   onClick={() => handleAnswerSubmit(option)}
                   disabled={isLocked}
-                  className={`rounded-2xl px-5 py-6 text-lg font-semibold transition-all duration-200 shadow-xl hover:scale-[1.02] disabled:cursor-not-allowed disabled:hover:scale-100 ${optionClasses}`}
+                  className={`rounded-xl px-4 py-4 text-base sm:text-lg font-semibold leading-tight transition-all duration-200 shadow-xl hover:scale-[1.02] disabled:cursor-not-allowed disabled:hover:scale-100 ${optionClasses}`}
                 >
                   {option}
                 </button>
@@ -206,16 +207,13 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </div>
         </div>
 
-        <div className={`text-5xl font-black ${timeColor}`}>{timeRemaining}s</div>
-        
           {!answerRevealed && player.lastAnswer && (
-            <span className="text-amber-200">✅ Answer locked in. Waiting for reveal...</span>
+            <span className="text-xs sm:text-sm text-amber-200">✅ Answer locked in. Waiting for reveal...</span>
           )}
-         
 
         {answerRevealed && (
-          <div className="w-full rounded-3xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl max-h-[300px] overflow-y-auto flex flex-col space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-purple-100/60 mb-2">
+          <div className="w-full rounded-3xl border border-white/10 bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xl shadow-xl max-h-[280px] overflow-y-auto flex flex-col space-y-1.5 sm:space-y-2">
+            <p className="text-[0.7rem] sm:text-xs uppercase tracking-[0.2em] text-purple-100/60 mb-1.5 sm:mb-2">
               Leaderboard
             </p>
 
@@ -237,7 +235,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           </div>
         )}
 
-        <p className="text-sm text-purple-100/60">Game Code: {gameCode}</p>
+        <p className="text-xs sm:text-sm text-purple-100/60">Game Code: {gameCode}</p>
       </div>
     </div>
   );

@@ -35,6 +35,11 @@ function TriviaGame({ prefillFromRoute }) {
   const params = prefillFromRoute ? useParams() : {};
   const { db, auth, authUser, userId, isLoading } = useFirebase();
 
+  const prefilledCode =
+    prefillFromRoute && params?.code
+      ? params.code.toUpperCase().substring(0, 4)
+      : null;
+
   const [screenName, setScreenName] = useState("");
   const [authModalMode, setAuthModalMode] = useState("signup");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -52,7 +57,7 @@ function TriviaGame({ prefillFromRoute }) {
     createGame,
     joinGame,
     handleSignOut,
-  } = useGameLogic(db, auth, userId, screenName);
+  } = useGameLogic(db, auth, userId, screenName, "", prefilledCode);
 
   const randomLoadingMessage = useMemo(
     () =>
@@ -91,11 +96,6 @@ function TriviaGame({ prefillFromRoute }) {
       </div>
     );
   }
-
-  const prefilledCode =
-    prefillFromRoute && params?.code
-      ? params.code.toUpperCase().substring(0, 4)
-      : null;
 
   const currentQuestion = lobbyState?.questions?.[lobbyState.currentQuestionIndex];
 
