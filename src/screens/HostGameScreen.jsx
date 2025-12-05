@@ -341,22 +341,47 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       </div>
 
       {/* Host Controls */}
-      <div className="w-full max-w-md space-y-3">
-        <div className="w-full bg-gray-800 p-4 rounded-xl flex items-center justify-between shadow-inner">
-          <div>
-            <p className="text-lg font-bold">Auto-Host Mode</p>
-            <p className="text-sm text-gray-400">Reveal & advance automatically</p>
+      <div className="w-full max-w-4xl flex flex-col gap-3">
+        <div className="w-full flex flex-col sm:flex-row gap-3 items-stretch">
+          <div className="flex-1 bg-gray-800 p-4 rounded-xl flex items-center justify-between shadow-inner">
+            <div>
+              <p className="text-lg font-bold">Auto-Host Mode</p>
+              <p className="text-sm text-gray-400">Reveal & advance automatically</p>
+            </div>
+            <button
+              onClick={() => {
+                const gameDocRef = getGameDocPath(db, gameCode);
+                updateDoc(gameDocRef, { autoHost: !autoHostEnabled });
+              }}
+              className={`px-4 py-2 rounded-lg font-bold transition ${autoHostEnabled ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"
+                }`}
+            >
+              {autoHostEnabled ? "On" : "Off"}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              const gameDocRef = getGameDocPath(db, gameCode);
-              updateDoc(gameDocRef, { autoHost: !autoHostEnabled });
-            }}
-            className={`px-4 py-2 rounded-lg font-bold transition ${autoHostEnabled ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"
-              }`}
-          >
-            {autoHostEnabled ? "On" : "Off"}
-          </button>
+
+          {!revealed ? (
+            <button
+              onClick={handleRevealAnswer}
+              className="flex-1 p-4 bg-yellow-500 text-gray-900 font-extrabold text-xl rounded-xl hover:bg-yellow-600 transition shadow-lg"
+            >
+              Reveal Answer
+            </button>
+          ) : isLastQuestion ? (
+            <button
+              onClick={handleEndGame}
+              className="flex-1 p-4 bg-red-500 text-white font-extrabold text-xl rounded-xl hover:bg-red-600 transition shadow-lg"
+            >
+              End Game & Show Results
+            </button>
+          ) : (
+            <button
+              onClick={handleNextQuestion}
+              className="flex-1 p-4 bg-indigo-500 text-white font-extrabold text-xl rounded-xl hover:bg-indigo-600 transition shadow-lg"
+            >
+              Next Question →
+            </button>
+          )}
         </div>
 
         {autoHostEnabled && revealed && nextQuestionCountdown !== null && (
@@ -364,29 +389,6 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
             {isLastQuestion ? "Showing results in" : "Next question in"}{" "}
             <span className="font-bold text-yellow-400">{nextQuestionCountdown}s</span>
           </div>
-        )}
-
-        {!revealed ? (
-          <button
-            onClick={handleRevealAnswer}
-            className="w-full p-4 bg-yellow-500 text-gray-900 font-extrabold text-xl rounded-xl hover:bg-yellow-600 transition shadow-lg"
-          >
-            Reveal Answer
-          </button>
-        ) : isLastQuestion ? (
-          <button
-            onClick={handleEndGame}
-            className="w-full p-4 bg-red-500 text-white font-extrabold text-xl rounded-xl hover:bg-red-600 transition shadow-lg"
-          >
-            End Game & Show Results
-          </button>
-        ) : (
-          <button
-            onClick={handleNextQuestion}
-            className="w-full p-4 bg-indigo-500 text-white font-extrabold text-xl rounded-xl hover:bg-indigo-600 transition shadow-lg"
-          >
-            Next Question →
-          </button>
         )}
       </div>
     </div>

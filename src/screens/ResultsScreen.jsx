@@ -5,6 +5,7 @@ import {
 } from "../helpers/firebasePaths";
 import { getDocs, deleteDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { persistGameStats } from "../helpers/userStats";
+import QuackKingLogo from "../components/QuackKingLogo.jsx";
 
 export default function ResultsScreen({
   db,
@@ -33,6 +34,7 @@ export default function ResultsScreen({
   }, [playerRecord, sortedPlayers, userId]);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [logoFailed, setLogoFailed] = useState(false);
   const isSignedIn = Boolean(authUser) && !authUser?.isAnonymous;
   const playerSnapshotRef = useRef(null);
   const placementRef = useRef(null);
@@ -151,7 +153,19 @@ export default function ResultsScreen({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 pointer-events-none select-none drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
+        {!logoFailed ? (
+          <img
+            src="/QuackKing.svg"
+            alt="QuackKing logo"
+            onError={() => setLogoFailed(true)}
+            className="w-[4.1rem] sm:w-[5.1rem]"
+          />
+        ) : (
+          <QuackKingLogo className="text-xl sm:text-2xl font-black" />
+        )}
+      </div>
       <div className="w-full max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-purple-100/70">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getPlayerDocPath } from "../helpers/firebasePaths";
 import { updateDoc } from "firebase/firestore";
 import { achievementBus } from "../services/achievements";
+import QuackKingLogo from "../components/QuackKingLogo.jsx";
 
 export default function PlayerGameScreen({ db, gameCode, lobbyState, players, currentQuestion, userId }) {
   const activePlayers = players.filter((p) => !p.isHost);
@@ -10,6 +11,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [shouldBounce, setShouldBounce] = useState(false);
   const [startCountdown, setStartCountdown] = useState(0);
+  const [logoFailed, setLogoFailed] = useState(false);
   const questionStartTime = lobbyState?.currentQuestionStartTime ?? null;
   const sortedPlayers = [...activePlayers].sort((a, b) => b.score - a.score);
 
@@ -127,7 +129,19 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const hasTheme = currentTheme.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-6 sm:py-10">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-6 sm:py-10">
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 pointer-events-none select-none drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
+        {!logoFailed ? (
+          <img
+            src="/QuackKing.svg"
+            alt="QuackKing logo"
+            onError={() => setLogoFailed(true)}
+            className="w-[4.1rem] sm:w-[5.1rem]"
+          />
+        ) : (
+          <QuackKingLogo className="text-xl sm:text-2xl font-black" />
+        )}
+      </div>
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center space-y-6 sm:space-y-8 text-center">
         <div className="space-y-1.5">
           {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-purple-100/70">

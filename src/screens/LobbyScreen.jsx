@@ -6,6 +6,7 @@ import { updateDoc, getDocs, writeBatch, deleteDoc, setDoc } from "firebase/fire
 import QuestionsEditor from "../components/QuestionsEditor";
 import PlayerAchievements from "../components/PlayerAchievements";
 import { achievementBus, getAchievementService } from "../services/achievements";
+import QuackKingLogo from "../components/QuackKingLogo.jsx";
 
 if (typeof window !== "undefined" && typeof window.setTestMode !== "function") {
   window.setTestMode = (flag) => {
@@ -100,8 +101,11 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [droppingPlayerId, setDroppingPlayerId] = useState("");
   const [hostSuggestionIndex, setHostSuggestionIndex] = useState(0);
   const [playerSuggestionIndex, setPlayerSuggestionIndex] = useState(0);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
+  const copyTimeoutRef = useRef(null);
 
   const questionCount = lobbyState?.questions?.length || 0;
   const aiStatus = useMemo(() => getAIStatus(), []);
@@ -151,6 +155,14 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   useEffect(() => {
     setTopicInput(playerSuggestion);
   }, [playerSuggestion]);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -354,6 +366,18 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
     setPlayerSuggestionIndex((prev) => (prev + 6) % CURATED_THEME_SUGGESTIONS.length);
   }, []);
 
+  const handleCopyCode = useCallback(async () => {
+    if (!gameCode) return;
+    try {
+      await navigator?.clipboard?.writeText(gameCode);
+      setCopied(true);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+    }
+  }, [gameCode]);
+
   // 💡 Player topic suggestion
   const handleSubmitSuggestion = useCallback(async () => {
     if (isHost || !db || !userId || !gameCode || !topicInput.trim()) return;
@@ -387,16 +411,63 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   }, [db, gameCode]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 pointer-events-none select-none drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
+        {!logoFailed ? (
+          <img
+            src="/QuackKing.svg"
+            alt="QuackKing logo"
+            onError={() => setLogoFailed(true)}
+            className="w-[4.1rem] sm:w-[5.1rem]"
+          />
+        ) : (
+          <QuackKingLogo className="text-xl sm:text-2xl font-black" />
+        )}
+      </div>
       <div className="w-full max-w-6xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Game Lobby</p>
-          <h2 className="text-4xl md:text-5xl font-extrabold">
-            Code: <span className="text-yellow-300">{gameCode}</span>
-          </h2>
-          <p className="text-base text-purple-100/80">
-            Ask players to join with the code above or share the invite link below.
-          </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <h2 className="text-4xl md:text-5xl font-extrabold">
+              Code: <span className="text-yellow-300">{gameCode}</span>
+            </h2>
+            <div className="relative flex flex-col items-center">
+              <div className="flex items-center justify-center gap-2">
+
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  aria-label="Copy game code"
+                  title={copied ? "Copied!" : "Copy game code"}
+                  className="inline-flex items-center justify-center p-1 text-white/60 hover:text-white active:scale-95 transition"
+                >
+                  <svg
+                    aria-hidden
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 9.5c0-.55.45-1 1-1h8c.55 0 1 .45 1 1v10c0 .55-.45 1-1 1h-8c-.55 0-1-.45-1-1z" />
+                    <path d="M6 14.5v-9c0-.55.45-1 1-1h8.5" />
+                  </svg>
+                  <span className="sr-only">Copy game code</span>
+                </button>
+              </div>
+
+              {/* Copied below the code, centered, no layout shift */}
+              <span
+                className={`absolute top-full mt-1 text-[10px] font-semibold text-yellow-300 transition-opacity duration-150 ${copied ? "opacity-100" : "opacity-0"
+                  }`}
+              >
+                Copied!
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
