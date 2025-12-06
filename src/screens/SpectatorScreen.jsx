@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
 import { useGameLogic } from "../hooks/useGameLogic";
 import { useParams } from "react-router-dom";
@@ -8,6 +8,14 @@ import QuackKingLogo from "../components/QuackKingLogo.jsx";
 export default function SpectatorScreen() {
     const { code } = useParams();
     const { db, auth } = useFirebase();
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+        const previous = document.title;
+        document.title = `QuackKing - Spectator ${code}`;
+        return () => {
+            document.title = previous;
+        };
+    }, [code]);
     // Reuse our game logic hook, but we don't need to create/join, just listen.
     // We pass a dummy user ID since spectators are passive.
     const { lobbyState, players } = useGameLogic(db, auth, "spectator", "", code);

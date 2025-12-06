@@ -53,6 +53,7 @@ export function useGameLogic(
     const [lobbyState, setLobbyState] = useState(null);
     const [players, setPlayers] = useState([]);
     const [mode, setMode] = useState("HOME"); // HOME, LOBBY, GAME, RESULTS
+    const [pendingResume, setPendingResume] = useState(null);
 
     const isHost = useMemo(
         () => lobbyState?.hostUserId === userId,
@@ -106,7 +107,7 @@ export function useGameLogic(
 
     // 🔄 Auto-resume if we have a cached session (helps mobile users returning mid-game)
     useEffect(() => {
-        if (!db || !userId || gameCode) return;
+        if (!db || !userId || gameCode || pendingResume) return;
         // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
         if (resumeGuardCode) return;
         const cached = readPersistedSession();
@@ -132,6 +133,17 @@ export function useGameLogic(
                 }
 
                 if (isCancelled) return;
+
+                // Hosts get a prompt to resume; players auto-resume as before.
+                if (cached.role === "host") {
+                    setPendingResume({
+                        role: "host",
+                        gameCode: cached.gameCode,
+                        screenName: cached.screenName || "",
+                    });
+                    return;
+                }
+
                 setGameCode(cached.gameCode);
                 // Mode will be updated once the snapshot listener fires
             } catch (err) {
@@ -142,12 +154,13 @@ export function useGameLogic(
         return () => {
             isCancelled = true;
         };
-    }, [db, userId, gameCode, resumeGuardCode]);
+    }, [db, userId, gameCode, resumeGuardCode, pendingResume]);
 
     // 🧩 Game Setup
     const createGame = useCallback(async () => {
         if (!db || !userId || !screenName.trim()) return;
         // Clear any cached session so the host can start fresh.
+        setPendingResume(null);
         clearPersistedSession();
         const newCode = generateGameCode();
         const gameDocRef = getGameDocPath(db, newCode);
@@ -214,6 +227,7 @@ export function useGameLogic(
     const joinGame = useCallback(
         async (code) => {
             if (!db || !userId || !screenName.trim()) return;
+            setPendingResume(null);
             const normalized = code.toUpperCase();
             const gameDocRef = getGameDocPath(db, normalized);
             const snap = await getDoc(gameDocRef);
@@ -281,12 +295,24 @@ export function useGameLogic(
             setGameCode("");
             setLobbyState(null);
             setPlayers([]);
+            setPendingResume(null);
             clearPersistedSession();
             setMode("HOME");
         } catch (err) {
             console.error("Failed to sign out:", err);
         }
     }, [auth]);
+
+    const resumeCachedSession = useCallback(() => {
+        if (!pendingResume?.gameCode) return;
+        setGameCode(pendingResume.gameCode);
+        setPendingResume(null);
+    }, [pendingResume]);
+
+    const dismissPendingResume = useCallback(() => {
+        setPendingResume(null);
+        clearPersistedSession();
+    }, []);
 
     return {
         gameCode,
@@ -300,5 +326,8 @@ export function useGameLogic(
         createGame,
         joinGame,
         handleSignOut,
+        pendingResume,
+        resumeCachedSession,
+        dismissPendingResume,
     };
 }

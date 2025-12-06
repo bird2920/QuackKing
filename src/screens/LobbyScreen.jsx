@@ -103,6 +103,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [playerSuggestionIndex, setPlayerSuggestionIndex] = useState(0);
   const [logoFailed, setLogoFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showManualUpload, setShowManualUpload] = useState(false);
+  const [showEditor, setShowEditor] = useState(true);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
   const copyTimeoutRef = useRef(null);
@@ -474,125 +476,284 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
           <div className="space-y-6">
             {isHost ? (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-yellow-200/80 flex items-center gap-2">
-                          <span role="img" aria-label="sparkles">✨</span>
-                          AI Question Generator
-                        </p>
-                        <h3 className="text-2xl font-bold mt-2">Create themed questions</h3>
-                        <p className="text-sm text-purple-100/70">
-                          Drop a theme and we&apos;ll spin up five multiple-choice questions.
-                        </p>
-                      </div>
-                      {aiEnabled ? (
-                        <>
-                          <input
-                            type="text"
-                            value={generatorTopic}
-                            onChange={(e) => setGeneratorTopic(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && generatorTopic.trim()) {
-                                handleGenerateQuestions();
-                              }
-                            }}
-                            disabled={isGenerating}
-                            className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
-                            placeholder="e.g., Science, History, Pop Culture..."
-                          />
-                          <button
-                            onClick={handleGenerateQuestions}
-                            disabled={!generatorTopic.trim() || isGenerating}
-                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 font-semibold text-white shadow-lg shadow-purple-900/40 transition hover:from-purple-400 hover:to-pink-400 disabled:opacity-50"
-                          >
-                            {isGenerating ? (
-                              <>
-                                <span role="img" aria-label="magic" className="animate-spin">✨</span>
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <span role="img" aria-label="wand">🔮</span>
-                                Generate Questions
-                              </>
-                            )}
-                          </button>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">
-                                Quick ideas
-                              </p>
-                              <button
-                                type="button"
-                                onClick={cycleHostSuggestions}
-                                disabled={isGenerating}
-                                className="text-[11px] font-semibold text-amber-100/90 underline-offset-4 hover:underline disabled:opacity-50"
-                              >
-                                Next
-                              </button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {hostThemeSuggestions.map((idea) => (
-                                <button
-                                  key={idea}
-                                  onClick={() => setGeneratorTopic(idea)}
-                                  disabled={isGenerating}
-                                  className="px-3 py-1 text-xs rounded-full border border-white/15 bg-white/5 text-white hover:border-yellow-300 disabled:opacity-40"
-                                >
-                                  {idea}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">
-                          <p className="font-semibold mb-1">AI Generator Disabled</p>
-                          <p>{aiUnavailableMessage}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-blue-200/80 flex items-center gap-2">
-                          <span role="img" aria-label="clipboard">📋</span>
-                          Manual Questions
-                        </p>
-                        <h3 className="text-2xl font-bold mt-2">Paste CSV rows</h3>
-                        <p className="text-sm text-purple-100/70">
-                          Format: Question, Answer, Option1, Option2, Option3.
-                        </p>
-                      </div>
-                      <textarea
-                        value={csvText}
-                        onChange={(e) => setCsvText(e.target.value)}
-                        placeholder={'Q: What is 2+2?,4,2,3,5'}
-                        className="w-full min-h-[130px] rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 font-mono text-sm text-white placeholder:text-purple-200/60 focus:outline-none focus:ring-2 focus:ring-blue-300/60 resize-none"
-                      />
-                      <button
-                        onClick={handleCSVUpload}
-                        disabled={!csvText.trim()}
-                        className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50"
-                      >
-                        Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
-                      </button>
-                      <p className="text-xs text-purple-100/60">
-                        Tip: copy rows straight from Sheets/Excel and drop them here.
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/30">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Share + Spectate</p>
+                      <h4 className="text-2xl font-semibold mt-1">Invite players first</h4>
+                      <p className="text-sm text-purple-100/70">
+                        Share the link and launch TV mode before you dive into questions.
                       </p>
                     </div>
                   </div>
+                  <CopyInviteButton gameCode={gameCode} />
+                  <div className="pt-2">
+                    <button
+                      onClick={() => window.open(`/#/spectator/${gameCode}`, "_blank")}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-purple-400/30 bg-purple-500/10 px-4 py-3 font-bold text-purple-200 transition hover:bg-purple-500/20 hover:border-purple-400/50"
+                    >
+                      <span className="text-xl">📺</span> Launch TV Mode (QR)
+                    </button>
+                    <p className="text-center text-xs text-purple-300/50 mt-2">
+                      Opens the spectator screen with the QR code.
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                  <div className="p-6 space-y-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-yellow-200/80 flex items-center gap-2">
+                          <span role="img" aria-label="sparkles">✨</span>
+                          Question Tools
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">Generate questions first</h3>
+                        <p className="text-sm text-purple-100/70">
+                          AI is the fastest way. CSV upload and the editor stay tucked away unless you need them.
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-purple-200/70">Loaded</p>
+                        <p className="text-lg font-bold text-yellow-200">
+                          {questionCount} {questionCount === 1 ? "question" : "questions"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-6">
+                      <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                        <div className="p-6 space-y-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-yellow-200/80 flex items-center gap-2">
+                              <span role="img" aria-label="sparkles">✨</span>
+                              AI Question Generator
+                            </p>
+                            <h3 className="text-2xl font-bold mt-2">Create themed questions</h3>
+                            <p className="text-sm text-purple-100/70">
+                              Drop a theme and we&apos;ll spin up five multiple-choice questions.
+                            </p>
+                          </div>
+                          {aiEnabled ? (
+                            <>
+                              <input
+                                type="text"
+                                value={generatorTopic}
+                                onChange={(e) => setGeneratorTopic(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && generatorTopic.trim()) {
+                                    handleGenerateQuestions();
+                                  }
+                                }}
+                                disabled={isGenerating}
+                                className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
+                                placeholder="e.g., Science, History, Pop Culture..."
+                              />
+                              <button
+                                onClick={handleGenerateQuestions}
+                                disabled={!generatorTopic.trim() || isGenerating}
+                                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 font-semibold text-white shadow-lg shadow-purple-900/40 transition hover:from-purple-400 hover:to-pink-400 disabled:opacity-50"
+                              >
+                                {isGenerating ? (
+                                  <>
+                                    <span role="img" aria-label="magic" className="animate-spin">✨</span>
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <span role="img" aria-label="wand">🔮</span>
+                                    Generate Questions
+                                  </>
+                                )}
+                              </button>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">
+                                    Quick ideas
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={cycleHostSuggestions}
+                                    disabled={isGenerating}
+                                    className="text-[11px] font-semibold text-amber-100/90 underline-offset-4 hover:underline disabled:opacity-50"
+                                  >
+                                    Next
+                                  </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {hostThemeSuggestions.map((idea) => (
+                                    <button
+                                      key={idea}
+                                      onClick={() => setGeneratorTopic(idea)}
+                                      disabled={isGenerating}
+                                      className="px-3 py-1 text-xs rounded-full border border-white/15 bg-white/5 text-white hover:border-yellow-300 disabled:opacity-40"
+                                    >
+                                      {idea}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+                              <p className="font-semibold mb-1">AI Generator Disabled</p>
+                              <p>{aiUnavailableMessage}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                        <div className="p-6 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.35em] text-blue-200/80 flex items-center gap-2">
+                                <span role="img" aria-label="clipboard">📋</span>
+                                Manual Questions
+                              </p>
+                              <h3 className="text-2xl font-bold mt-2">Paste CSV rows</h3>
+                              <p className="text-sm text-purple-100/70">
+                                Keep it collapsed unless you need a custom set.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowManualUpload((prev) => !prev)}
+                              className="text-xs font-semibold text-amber-100/90 underline-offset-4 hover:underline"
+                            >
+                              {showManualUpload ? "Hide" : "Show"}
+                            </button>
+                          </div>
+
+                          {showManualUpload && (
+                            <>
+                              <p className="text-sm text-purple-100/70">
+                                Format: Question, Answer, Option1, Option2, Option3.
+                              </p>
+                              <textarea
+                                value={csvText}
+                                onChange={(e) => setCsvText(e.target.value)}
+                                placeholder={'Q: What is 2+2?,4,2,3,5'}
+                                className="w-full min-h-[130px] rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 font-mono text-sm text-white placeholder:text-purple-200/60 focus:outline-none focus:ring-2 focus:ring-blue-300/60 resize-none"
+                              />
+                              <button
+                                onClick={handleCSVUpload}
+                                disabled={!csvText.trim()}
+                                className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50"
+                              >
+                                Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
+                              </button>
+                              <p className="text-xs text-purple-100/60">
+                                Tip: copy rows straight from Sheets/Excel and drop them here.
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="rounded-2xl border border-rose-400/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                        {error}
+                      </div>
+                    )}
+
+                    {isHost && questionCount > 0 && (
+                      <div
+                        ref={editorRef}
+                        className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 space-y-3 shadow-inner shadow-black/30"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Question Editor</p>
+                            <p className="text-sm text-purple-100/70">
+                              Tweak anything that looks off before you start.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowEditor((prev) => !prev)}
+                            className="text-xs font-semibold text-amber-100/90 underline-offset-4 hover:underline"
+                          >
+                            {showEditor ? "Hide" : "Show"}
+                          </button>
+                        </div>
+                        {showEditor && (
+                          <QuestionsEditor
+                            questions={lobbyState.questions}
+                            onSave={handleSaveQuestions}
+                            isHost={isHost}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {error && (
-                  <div className="rounded-2xl border border-rose-400/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                    {error}
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/40">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Start</p>
+                    <h4 className="text-2xl font-semibold mt-1">Ready to play?</h4>
+                    <p className="text-sm text-purple-100/70">
+                      {questionCount > 0
+                        ? `You have ${questionCount} question${questionCount === 1 ? "" : "s"} loaded.`
+                        : "Upload or generate questions to unlock the start button."}
+                    </p>
                   </div>
-                )}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <button
+                      onClick={handleStartGame}
+                      disabled={questionCount === 0 || players.length < 2}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-4 py-3 text-lg font-bold text-white shadow-lg shadow-red-900/40 transition hover:bg-red-400/90 disabled:opacity-50"
+                    >
+                      Start Game
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!isHost || !db || !lobbyState) return;
+                        if (lobbyState.questions.length === 0) {
+                          setError("You must upload or generate questions first.");
+                          return;
+                        }
+                        try {
+                          const gameDocRef = getGameDocPath(db, gameCode);
+                          const playersColRef = getPlayersCollectionPath(db, gameCode);
+                          const playerDocs = await getDocs(playersColRef);
+                          if (!playerDocs.empty) {
+                            const batch = writeBatch(db);
+                            playerDocs.docs.forEach((docSnap) =>
+                              batch.update(docSnap.ref, {
+                                lastAnswer: null,
+                                score: 0,
+                                answerTimestamp: null,
+                              })
+                            );
+                            await batch.commit();
+                          }
+                          await updateDoc(gameDocRef, {
+                            status: "PLAYING",
+                            currentQuestionIndex: 0,
+                            currentQuestionStartTime: Date.now(),
+                          });
+                          if (typeof window.setTestMode === "function") {
+                            window.setTestMode(true);
+                          }
+                        } catch (e) {
+                          console.error("❌ Error starting test mode:", e);
+                          setError(`Failed to start test mode: ${e.message}`);
+                        }
+                      }}
+                      disabled={questionCount === 0}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 text-lg font-semibold text-white transition hover:bg-slate-900 disabled:opacity-50"
+                    >
+                      Play Solo
+                    </button>
+                  </div>
+                  {players.length < 2 && (
+                    <p className="text-center text-sm text-amber-200">
+                      Need at least 2 players to launch the real game.
+                    </p>
+                  )}
+                </div>
 
                 {/* Host Settings */}
                 <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
@@ -710,85 +871,6 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/40">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Share + Start</p>
-                    <h4 className="text-2xl font-semibold mt-1">Ready to play?</h4>
-                    <p className="text-sm text-purple-100/70">
-                      {questionCount > 0
-                        ? `You have ${questionCount} question${questionCount === 1 ? "" : "s"} loaded.`
-                        : "Upload or generate questions to unlock the start button."}
-                    </p>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <button
-                      onClick={handleStartGame}
-                      disabled={questionCount === 0 || players.length < 2}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-4 py-3 text-lg font-bold text-white shadow-lg shadow-red-900/40 transition hover:bg-red-400/90 disabled:opacity-50"
-                    >
-                      Start Game
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!isHost || !db || !lobbyState) return;
-                        if (lobbyState.questions.length === 0) {
-                          setError("You must upload or generate questions first.");
-                          return;
-                        }
-                        try {
-                          const gameDocRef = getGameDocPath(db, gameCode);
-                          const playersColRef = getPlayersCollectionPath(db, gameCode);
-                          const playerDocs = await getDocs(playersColRef);
-                          if (!playerDocs.empty) {
-                            const batch = writeBatch(db);
-                            playerDocs.docs.forEach((docSnap) =>
-                              batch.update(docSnap.ref, {
-                                lastAnswer: null,
-                                score: 0,
-                                answerTimestamp: null,
-                              })
-                            );
-                            await batch.commit();
-                          }
-                          await updateDoc(gameDocRef, {
-                            status: "PLAYING",
-                            currentQuestionIndex: 0,
-                            currentQuestionStartTime: Date.now(),
-                          });
-                          if (typeof window.setTestMode === "function") {
-                            window.setTestMode(true);
-                          }
-                        } catch (e) {
-                          console.error("❌ Error starting test mode:", e);
-                          setError(`Failed to start test mode: ${e.message}`);
-                        }
-                      }}
-                      disabled={questionCount === 0}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 text-lg font-semibold text-white transition hover:bg-slate-900 disabled:opacity-50"
-                    >
-                      Test Alone
-                    </button>
-                  </div>
-                  {players.length < 2 && (
-                    <p className="text-center text-sm text-amber-200">
-                      Need at least 2 players to launch the real game.
-                    </p>
-                  )}
-                  <CopyInviteButton gameCode={gameCode} />
-
-                  <div className="pt-4 border-t border-white/10">
-                    <button
-                      onClick={() => window.open(`/#/spectator/${gameCode}`, "_blank")}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-purple-400/30 bg-purple-500/10 px-4 py-3 font-bold text-purple-200 transition hover:bg-purple-500/20 hover:border-purple-400/50"
-                    >
-                      <span className="text-xl">📺</span> Launch TV Mode
-                    </button>
-                    <p className="text-center text-xs text-purple-300/50 mt-2">
-                      Open this on a big screen for players to watch!
-                    </p>
                   </div>
                 </div>
               </>
@@ -918,17 +1000,6 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
             )}
           </div>
         </div>
-
-        {isHost && questionCount > 0 && (
-          <div ref={editorRef} className="w-full">
-            <QuestionsEditor
-              questions={lobbyState.questions}
-              onSave={handleSaveQuestions}
-              isHost={isHost}
-            />
-          </div>
-        )}
-
         <p className="text-xs text-purple-100/60 text-center break-all">User ID: {userId}</p>
       </div>
     </div>

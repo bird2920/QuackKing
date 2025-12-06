@@ -16,6 +16,10 @@ export default function HomeScreen({
   authUser,
   onRequestAccount,
   onSignOut,
+  resumeGameCode,
+  resumeScreenName,
+  onResumeGame,
+  onDismissResume,
 }) {
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
   const [error, setError] = useState("");
@@ -27,8 +31,16 @@ export default function HomeScreen({
 
   const isPrefilled = Boolean(prefilledCode);
   const codeValue = codeDigits.join("");
+  const isJoinDisabled = !screenName.trim() || codeDigits.some((digit) => !digit);
+  const isCreateDisabled = !screenName.trim();
 
   useEffect(() => nameInputRef.current?.focus(), []);
+
+  useEffect(() => {
+    if (!screenName.trim() && resumeScreenName) {
+      setScreenName(resumeScreenName.slice(0, 15));
+    }
+  }, [resumeScreenName, screenName, setScreenName]);
 
   useEffect(() => {
     if (!prefilledCode) return;
@@ -155,6 +167,55 @@ export default function HomeScreen({
         <div className="h-full w-full bg-[radial-gradient(circle_at_15%_20%,rgba(168,85,247,0.22),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(244,114,182,0.16),transparent_26%)] blur-3xl" />
       </div>
 
+      {resumeGameCode && (
+        <div className="absolute inset-x-0 top-4 z-30 flex justify-center px-4">
+          <div className="w-full max-w-xl rounded-3xl border border-amber-200/70 bg-amber-50 text-slate-900 shadow-2xl shadow-amber-200/40 p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-amber-600">Resume Game</p>
+                <h2 className="text-2xl font-black leading-tight">Resume game {resumeGameCode}</h2>
+                <p className="text-sm text-slate-700">You were hosting this game. Pick an option below.</p>
+              </div>
+              {onDismissResume && (
+                <button
+                  type="button"
+                  onClick={() => onDismissResume?.()}
+                  className="text-xs font-semibold text-amber-700 underline-offset-4 hover:underline"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => onResumeGame?.()}
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 px-4 py-3 text-base font-black text-slate-950 shadow-lg shadow-amber-200/70 transition hover:scale-[1.01]"
+              >
+                Resume Game {resumeGameCode}
+              </button>
+              <div className="grid sm:grid-cols-2 gap-2">
+              <button
+                  type="button"
+                  onClick={handleJoin}
+                  className="rounded-2xl border border-slate-900/10 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-md transition hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
+                >
+                  Join Game
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  className="rounded-2xl border border-orange-200 bg-orange-100 px-4 py-3 text-sm font-semibold text-orange-900 shadow-md transition hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
+                >
+                  Create New Game
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="relative z-10 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl space-y-8">
           <div className="text-center space-y-3">
@@ -236,14 +297,14 @@ export default function HomeScreen({
             <div className="grid sm:grid-cols-2 gap-3">
               <button
                 onClick={handleJoin}
-                disabled={!screenName.trim() || codeDigits.some((digit) => !digit)}
+                disabled={isJoinDisabled}
                 className="p-3.5 w-full rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 text-slate-950 font-black text-lg shadow-xl hover:scale-[1.01] transition disabled:opacity-60 disabled:hover:scale-100"
               >
                 Join
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!screenName.trim()}
+                disabled={isCreateDisabled}
                 className="p-3.5 w-full rounded-2xl bg-gradient-to-r from-yellow-300 to-orange-400 text-slate-950 font-black text-lg shadow-xl hover:scale-[1.01] transition disabled:opacity-60 disabled:hover:scale-100"
               >
                 Create Game

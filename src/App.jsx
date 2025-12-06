@@ -57,6 +57,9 @@ function TriviaGame({ prefillFromRoute }) {
     createGame,
     joinGame,
     handleSignOut,
+    pendingResume,
+    resumeCachedSession,
+    dismissPendingResume,
   } = useGameLogic(db, auth, userId, screenName, "", prefilledCode);
 
   const randomLoadingMessage = useMemo(
@@ -113,6 +116,10 @@ function TriviaGame({ prefillFromRoute }) {
         authUser={authUser}
         onRequestAccount={openAuthModal}
         onSignOut={handleSignOut}
+        resumeGameCode={pendingResume?.gameCode}
+        resumeScreenName={pendingResume?.screenName}
+        onResumeGame={resumeCachedSession}
+        onDismissResume={dismissPendingResume}
       />
     );
   } else if (lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD") {
