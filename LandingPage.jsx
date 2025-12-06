@@ -28,8 +28,8 @@ const LandingPage = () => {
                 <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.18),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.12),transparent_25%),radial-gradient(circle_at_20%_80%,rgba(244,114,182,0.12),transparent_22%)] blur-3xl" />
             </div>
 
-            <div className="relative z-10 flex items-center justify-center px-4 py-16">
-                <div className="w-full max-w-5xl text-center space-y-10">
+            <div className="relative z-10 flex items-center justify-center px-4 py-8 sm:py-10">
+                <div className="w-full max-w-5xl text-center space-y-6 sm:space-y-7 md:space-y-9">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.35em] text-purple-100/70 shadow-sm">
                         <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
                         Live party trivia
@@ -43,18 +43,18 @@ const LandingPage = () => {
                                     src="/QuackKing.svg"
                                     alt="QuackKing logo with crown"
                                     onError={() => setLogoFailed(true)}
-                                    className="h-16 sm:h-20 md:h-32 drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]"
+                                    className="h-14 sm:h-18 md:h-24 drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]"
                                 />
                             ) : (
-                                <QuackKingLogo className="text-6xl sm:text-7xl md:text-8xl font-black text-white tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]" />
+                                <QuackKingLogo className="text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]" />
                             )}
                         </h1>
-                        <p className="text-2xl sm:text-3xl text-purple-100/80 font-semibold">{tagline}</p>
+                        <p className="text-xl sm:text-2xl text-purple-100/80 font-semibold">{tagline}</p>
                     </div>
 
                     {/* Description */}
-                    <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] border border-white/10 space-y-8">
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 max-w-4xl mx-auto">
+                    <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-5 sm:p-8 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] border border-white/10 space-y-5 sm:space-y-7">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7 max-w-4xl mx-auto">
                             <div className="relative flex-shrink-0">
                                 <div className="absolute inset-[-10px] sm:inset-[-14px] rounded-full bg-gradient-to-br from-amber-300/60 via-orange-300/40 to-amber-500/30 blur-2xl" />
                                 <img
@@ -64,22 +64,22 @@ const LandingPage = () => {
                                 />
                             </div>
                             <p className="text-lg sm:text-xl leading-relaxed text-white/90">
-                                Host multiplayer trivia parties with your friends. One person kicks things off, everyone else joins with a four-letter code, and you all battle it out live on your own devices.
+                                Host a live trivia battle in seconds. Spin up a lobby, have friends join with a four-letter code on their phones, and run fast rounds with instant scoring using your CSV packs or AI-made questions.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 shadow-lg">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 space-y-1.5 shadow-lg">
                                 <div className="text-4xl">🎮</div>
                                 <h3 className="text-lg font-bold text-yellow-300">Easy to Play</h3>
                                 <p className="text-sm text-purple-100/70">Share a 4-letter code and jump in.</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 shadow-lg">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 space-y-1.5 shadow-lg">
                                 <div className="text-4xl">⚡</div>
                                 <h3 className="text-lg font-bold text-yellow-300">Real-Time</h3>
                                 <p className="text-sm text-purple-100/70">Fast scoring, instant leaderboards.</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 shadow-lg">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 space-y-1.5 shadow-lg">
                                 <div className="text-4xl">🎯</div>
                                 <h3 className="text-lg font-bold text-yellow-300">Time-Based</h3>
                                 <p className="text-sm text-purple-100/70">30-second rounds with bonus points.</p>
@@ -94,7 +94,7 @@ const LandingPage = () => {
                     </div>
 
                     {/* CTA Button */}
-                    <div className="flex flex-col items-center gap-3">
+                    <div className="flex flex-col items-center gap-2">
                         <button
                             onClick={() => navigate('/game')}
                             className="bg-gradient-to-r from-yellow-300 via-amber-200 to-orange-400 hover:from-yellow-200 hover:to-orange-300 text-slate-950 font-black text-2xl sm:text-3xl px-12 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-200 border-2 border-yellow-200"
