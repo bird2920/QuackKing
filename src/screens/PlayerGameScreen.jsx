@@ -14,6 +14,8 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const [logoFailed, setLogoFailed] = useState(false);
   const questionStartTime = lobbyState?.currentQuestionStartTime ?? null;
   const sortedPlayers = [...activePlayers].sort((a, b) => b.score - a.score);
+  const revealTime = lobbyState?.timerSettings?.revealTime ?? 30;
+  const FIRST_QUESTION_DELAY_SECONDS = 3;
 
   // 🧹 Reset local state when question changes
   useEffect(() => {
@@ -44,16 +46,24 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
     if (!lobbyState?.currentQuestionStartTime) return;
 
     const startTime = lobbyState.currentQuestionStartTime;
+    const shouldDelay = lobbyState.currentQuestionIndex === 0 && !lobbyState.answerRevealed;
+    const delayMs = shouldDelay ? FIRST_QUESTION_DELAY_SECONDS * 1000 : 0;
     const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 30 - Math.floor(elapsed / 1000));
+      const elapsed = Date.now() - startTime - delayMs;
+      const adjustedElapsedSeconds = Math.max(0, Math.floor(elapsed / 1000));
+      const remaining = Math.max(0, revealTime - adjustedElapsedSeconds);
       setTimeRemaining(remaining);
     };
 
     tick();
     const interval = setInterval(tick, 100);
     return () => clearInterval(interval);
-  }, [lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex]);
+  }, [
+    lobbyState?.currentQuestionStartTime,
+    lobbyState?.currentQuestionIndex,
+    lobbyState?.answerRevealed,
+    revealTime,
+  ]);
 
   // 🚦 Pre-start countdown when the game begins so players can see it
   useEffect(() => {
@@ -63,7 +73,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
     }
     const elapsed = Date.now() - lobbyState.currentQuestionStartTime;
     const initial = lobbyState.currentQuestionIndex === 0 && !lobbyState.answerRevealed
-      ? Math.max(0, 3 - Math.floor(elapsed / 1000))
+      ? Math.max(0, FIRST_QUESTION_DELAY_SECONDS - Math.floor(elapsed / 1000))
       : 0;
     setStartCountdown(initial);
     if (initial === 0) return;

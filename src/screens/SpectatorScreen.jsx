@@ -12,6 +12,8 @@ export default function SpectatorScreen() {
     // We pass a dummy user ID since spectators are passive.
     const { lobbyState, players } = useGameLogic(db, auth, "spectator", "", code);
     const [logoFailed, setLogoFailed] = useState(false);
+    const revealTime = lobbyState?.timerSettings?.revealTime ?? 30;
+    const FIRST_QUESTION_DELAY_SECONDS = 3;
 
     const joinBaseUrl = useMemo(() => {
         const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -61,13 +63,21 @@ export default function SpectatorScreen() {
         const interval = setInterval(() => {
             const now = Date.now();
             const start = lobbyState.currentQuestionStartTime;
-            const elapsed = (now - start) / 1000;
-            const remaining = Math.max(0, 30 - elapsed);
+            const shouldDelay = lobbyState.currentQuestionIndex === 0 && !lobbyState.answerRevealed;
+            const delayMs = shouldDelay ? FIRST_QUESTION_DELAY_SECONDS * 1000 : 0;
+            const elapsed = (now - start - delayMs) / 1000;
+            const remaining = Math.max(0, revealTime - elapsed);
             setTimeLeft(remaining);
         }, 100);
 
         return () => clearInterval(interval);
-    }, [lobbyState?.status, lobbyState?.currentQuestionStartTime]);
+    }, [
+        lobbyState?.status,
+        lobbyState?.currentQuestionStartTime,
+        lobbyState?.currentQuestionIndex,
+        lobbyState?.answerRevealed,
+        revealTime,
+    ]);
 
     if (!lobbyState) {
         return (

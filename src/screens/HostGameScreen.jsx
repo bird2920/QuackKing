@@ -12,6 +12,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
   const revealTime = lobbyState?.timerSettings?.revealTime ?? 30;
   const nextQuestionTime = lobbyState?.timerSettings?.nextQuestionTime ?? 3;
   const [nextQuestionCountdown, setNextQuestionCountdown] = useState(null);
+  const FIRST_QUESTION_DELAY_SECONDS = 3;
 
   const questionNumber = (lobbyState?.currentQuestionIndex || 0) + 1;
   const totalQuestions = lobbyState?.questions?.length || 0;
@@ -27,16 +28,24 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     if (!lobbyState?.currentQuestionStartTime) return;
 
     const startTime = lobbyState.currentQuestionStartTime;
+    const shouldDelay = lobbyState.currentQuestionIndex === 0 && !lobbyState.answerRevealed;
+    const delayMs = shouldDelay ? FIRST_QUESTION_DELAY_SECONDS * 1000 : 0;
     const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, revealTime - Math.floor(elapsed / 1000));
+      const elapsed = Date.now() - startTime - delayMs;
+      const adjustedElapsedSeconds = Math.max(0, Math.floor(elapsed / 1000));
+      const remaining = Math.max(0, revealTime - adjustedElapsedSeconds);
       setTimeRemaining(remaining);
     };
 
     tick();
     const interval = setInterval(tick, 100);
     return () => clearInterval(interval);
-  }, [lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex]);
+  }, [
+    lobbyState?.currentQuestionStartTime,
+    lobbyState?.currentQuestionIndex,
+    lobbyState?.answerRevealed,
+    revealTime,
+  ]);
 
   // 🔁 Clear answered tracking when a new question starts to avoid carrying stale answers
   useEffect(() => {

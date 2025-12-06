@@ -96,7 +96,7 @@ describe('HostGameScreen', () => {
         status: 'PLAYING',
         hostUserId: 'host-1',
         currentQuestionIndex: 0,
-        currentQuestionStartTime: Date.now() - 31_000,
+        currentQuestionStartTime: Date.now() - 40_000,
         answerRevealed: false,
         questions: baseQuestions,
       });

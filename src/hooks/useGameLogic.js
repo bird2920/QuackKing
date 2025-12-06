@@ -111,11 +111,6 @@ export function useGameLogic(
         if (resumeGuardCode) return;
         const cached = readPersistedSession();
         if (!cached || cached.userId !== userId || !cached.gameCode) return;
-        // Hosts want to start new games; never auto-resume host sessions.
-        if (cached.role === "host") {
-            clearPersistedSession();
-            return;
-        }
 
         let isCancelled = false;
         (async () => {
@@ -127,8 +122,10 @@ export function useGameLogic(
                 }
                 const [gameSnap, playerSnap] = await Promise.all(checks);
                 const gameExists = gameSnap?.exists();
-                const playerExists = cached.role === "host" ? true : playerSnap?.exists();
+                const isHostOfGame = gameExists && gameSnap.data()?.hostUserId === userId;
+                const playerExists = cached.role === "host" ? isHostOfGame : playerSnap?.exists();
 
+                // Clear stale sessions (game gone or user no longer part of it)
                 if (!gameExists || !playerExists) {
                     clearPersistedSession();
                     return;
@@ -198,6 +195,13 @@ export function useGameLogic(
             achievementBus.emit({
                 type: "GAME_CREATED",
                 data: { userId, gameId: newCode },
+            });
+
+            persistSession({
+                role: "host",
+                gameCode: newCode,
+                screenName: screenName.trim(),
+                userId,
             });
 
             setGameCode(newCode);
