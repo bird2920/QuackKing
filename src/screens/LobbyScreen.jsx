@@ -90,8 +90,13 @@ const sliceSuggestions = (list, startIndex, count) => {
 
 // Lobby screen allows host to upload or generate questions and start game.
 export default function LobbyScreen({ db, gameCode, lobbyState, players, userId, isHost }) {
+  const DEFAULT_GENERATE_COUNT = 5;
+  const MIN_GENERATE_QUESTIONS = 1;
+  const MAX_GENERATE_QUESTIONS = 50;
+
   const [csvText, setCsvText] = useState("");
   const [generatorTopic, setGeneratorTopic] = useState("");
+  const [generatorCount, setGeneratorCount] = useState(DEFAULT_GENERATE_COUNT);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [topicInput, setTopicInput] = useState("");
@@ -292,11 +297,23 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
     }
   }, [csvText, db, gameCode]);
 
+  const clampGeneratorCount = useCallback(
+    (value) => {
+      const parsed = Number(value);
+      if (Number.isNaN(parsed)) return DEFAULT_GENERATE_COUNT;
+      return Math.min(Math.max(parsed, MIN_GENERATE_QUESTIONS), MAX_GENERATE_QUESTIONS);
+    },
+    [DEFAULT_GENERATE_COUNT, MAX_GENERATE_QUESTIONS, MIN_GENERATE_QUESTIONS]
+  );
+
   // 🤖 AI Generate Questions
   const handleGenerateQuestions = useCallback(
-    async (topicOverride) => {
+    async (topicOverride, countOverride) => {
       const rawTopic = typeof topicOverride === "string" ? topicOverride : generatorTopic;
       const topic = rawTopic.trim();
+      const desiredCount = clampGeneratorCount(
+        typeof countOverride === "number" ? countOverride : generatorCount
+      );
       if (!db || !gameCode || !isHost || !topic) return;
       if (!aiEnabled) {
         setError(aiUnavailableMessage || "AI generator unavailable. Please upload questions manually.");
@@ -307,7 +324,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       setError("");
 
       try {
-        const aiQuestions = await requestAiQuestions(topic);
+        const aiQuestions = await requestAiQuestions(topic, desiredCount);
         if (!aiQuestions.length) {
           throw new Error("AI returned empty response.");
         }
@@ -354,7 +371,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         setIsGenerating(false);
       }
     },
-    [aiEnabled, aiUnavailableMessage, db, gameCode, generatorTopic, isHost]
+    [aiEnabled, aiUnavailableMessage, clampGeneratorCount, db, gameCode, generatorCount, generatorTopic, isHost]
   );
 
   // 🔀 Simple shuffle
@@ -530,24 +547,40 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                             </p>
                             <h3 className="text-2xl font-bold mt-2">Create themed questions</h3>
                             <p className="text-sm text-purple-100/70">
-                              Drop a theme and we&apos;ll spin up five multiple-choice questions.
+                              Drop a theme and pick how many questions to spin up (max 50).
                             </p>
                           </div>
                           {aiEnabled ? (
                             <>
-                              <input
-                                type="text"
-                                value={generatorTopic}
-                                onChange={(e) => setGeneratorTopic(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" && generatorTopic.trim()) {
-                                    handleGenerateQuestions();
-                                  }
-                                }}
-                                disabled={isGenerating}
-                                className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
-                                placeholder="e.g., Science, History, Pop Culture..."
-                              />
+                              <div className="flex flex-col sm:flex-row gap-3">
+                                <input
+                                  type="text"
+                                  value={generatorTopic}
+                                  onChange={(e) => setGeneratorTopic(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && generatorTopic.trim()) {
+                                      handleGenerateQuestions();
+                                    }
+                                  }}
+                                  disabled={isGenerating}
+                                  className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
+                                  placeholder="e.g., Science, History, Pop Culture..."
+                                />
+                                <div className="sm:w-40">
+                                  <label className="text-[11px] uppercase tracking-[0.3em] text-purple-100/80 block mb-1">
+                                    Count
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={MIN_GENERATE_QUESTIONS}
+                                    max={MAX_GENERATE_QUESTIONS}
+                                    value={generatorCount}
+                                    onChange={(e) => setGeneratorCount(clampGeneratorCount(e.target.value))}
+                                    disabled={isGenerating}
+                                    className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-300/70 disabled:opacity-50"
+                                  />
+                                </div>
+                              </div>
                               <button
                                 onClick={handleGenerateQuestions}
                                 disabled={!generatorTopic.trim() || isGenerating}
@@ -561,7 +594,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                                 ) : (
                                   <>
                                     <span role="img" aria-label="wand">🔮</span>
-                                    Generate Questions
+                                    Generate {generatorCount} Question{generatorCount === 1 ? "" : "s"}
                                   </>
                                 )}
                               </button>
@@ -980,7 +1013,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                             // Set the generator topic to the suggested theme, then auto-generate.
                             onClick={() => {
                               setGeneratorTopic(suggestion);
-                              void handleGenerateQuestions(suggestion);
+                              void handleGenerateQuestions(suggestion, generatorCount);
                             }}
                             className="mt-2 text-xs font-semibold text-yellow-200 hover:text-yellow-100"
                           >

@@ -1,8 +1,12 @@
 import { callAIApi, getGeminiConfig } from "./geminiService";
 
-const DEFAULT_SYSTEM_PROMPT =
-  "Make 5 trivia Qs with 1 correct and 3 wrong. Keep answers concise (under 60 chars) and avoid commentary or parentheses. Return JSON [{question,correctAnswer,distractor1,distractor2,distractor3}]";
 const MAX_ANSWER_LENGTH = 60;
+const DEFAULT_COUNT = 5;
+const MAX_QUESTIONS = 50;
+const MIN_QUESTIONS = 1;
+
+const buildSystemPrompt = (count) =>
+  `Make ${count} trivia Qs with 1 correct and 3 wrong. Keep answers concise (under 60 chars) and avoid commentary or parentheses. Return JSON [{question,correctAnswer,distractor1,distractor2,distractor3}]`;
 
 const getProxyUrl = () => {
   const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
@@ -11,6 +15,12 @@ const getProxyUrl = () => {
     (typeof window !== "undefined" ? window.AI_PROXY_URL : "") ||
     ""
   );
+};
+
+const clampCount = (count) => {
+  const parsed = Number(count);
+  if (Number.isNaN(parsed)) return DEFAULT_COUNT;
+  return Math.min(Math.max(parsed, MIN_QUESTIONS), MAX_QUESTIONS);
 };
 
 export function getAIStatus() {
@@ -76,13 +86,14 @@ const normalizeAiPayload = (raw) => {
     .filter(Boolean);
 };
 
-export async function requestAiQuestions(topic) {
+export async function requestAiQuestions(topic, count = DEFAULT_COUNT) {
   const trimmedTopic = topic?.trim();
   if (!trimmedTopic) {
     const error = new Error("Topic is required");
     error.code = "TOPIC_REQUIRED";
     throw error;
   }
+  const desiredCount = clampCount(count);
 
   const status = getAIStatus();
   if (!status.isEnabled) {
@@ -95,7 +106,7 @@ export async function requestAiQuestions(topic) {
     const response = await fetch(status.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic: trimmedTopic }),
+      body: JSON.stringify({ topic: trimmedTopic, count: desiredCount }),
     });
 
     if (!response.ok) {
@@ -108,8 +119,8 @@ export async function requestAiQuestions(topic) {
     return normalizeAiPayload(payload);
   }
 
-  const userQuery = `Generate 5 trivia questions about "${trimmedTopic}".`;
-  const jsonString = await callAIApi(userQuery, DEFAULT_SYSTEM_PROMPT);
+  const userQuery = `Generate ${desiredCount} trivia questions about "${trimmedTopic}".`;
+  const jsonString = await callAIApi(userQuery, buildSystemPrompt(desiredCount));
   const parsed = JSON.parse(jsonString);
   return normalizeAiPayload(parsed);
 }
