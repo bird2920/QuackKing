@@ -50,6 +50,32 @@ export default function SpectatorScreen() {
         return [...players].sort((a, b) => a.name.localeCompare(b.name));
     }, [players]);
 
+    // 🏁 Fastest players for current round (top 3 by answer time)
+    const fastestPlayers = useMemo(() => {
+        if (!lobbyState?.currentQuestionStartTime) return [];
+        const answered = players
+            .filter((p) => p.lastAnswer !== null && p.answerTimestamp)
+            .map((p) => ({
+                ...p,
+                answerTime: p.answerTimestamp - lobbyState.currentQuestionStartTime,
+            }));
+        return answered
+            .sort((a, b) => a.answerTime - b.answerTime)
+            .slice(0, 3);
+    }, [players, lobbyState?.currentQuestionStartTime, lobbyState?.currentQuestionIndex]);
+
+    // 📊 Distribution of answers for the current question
+    const answerDistribution = useMemo(() => {
+        const dist = {};
+        players.forEach((p) => {
+            if (p.lastAnswer !== null) {
+                const key = String(p.lastAnswer);
+                dist[key] = (dist[key] || 0) + 1;
+            }
+        });
+        return dist;
+    }, [players, lobbyState?.currentQuestionIndex]);
+
     const LogoBadge = () => (
         <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 pointer-events-none select-none">
             {!logoFailed ? (
@@ -187,12 +213,11 @@ export default function SpectatorScreen() {
                 </div>
 
                 {/* Player Grid (Pressure Cooker) */}
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex-1 flex flex-col items-center justify-center">
                     <div className="flex flex-wrap justify-center gap-6 max-w-7xl">
                         {gridPlayers.map((p) => {
                             const hasAnswered = p.lastAnswer !== null;
                             const isPulsing = !hasAnswered && timeLeft <= 10;
-                            // Speed up pulse as time runs out (1s down to 0.2s)
                             const pulseDuration = isPulsing
                                 ? `${Math.max(0.2, timeLeft / 10)}s`
                                 : '0s';
@@ -203,13 +228,13 @@ export default function SpectatorScreen() {
                                     style={{
                                         animation: isPulsing ? `pressurePulse ${pulseDuration} infinite` : 'none'
                                     }}
-                                    className={`
-                                        relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300
-                                        ${hasAnswered
-                                            ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
-                                            : "bg-slate-800 border-slate-700 shadow-lg"
-                                        }
-                                    `}
+                                    className={
+                                        `relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300 ${
+                                            hasAnswered
+                                                ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                                                : "bg-slate-800 border-slate-700 shadow-lg"
+                                        }`
+                                    }
                                 >
                                     <div className={`text-2xl font-bold truncate max-w-full px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
                                         {p.name}
@@ -224,6 +249,46 @@ export default function SpectatorScreen() {
                                 </div>
                             );
                         })}
+                    </div>
+
+                    {/* Stats Panel */}
+                    <div className="mt-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Fastest Answers List */}
+                        <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-4">
+                            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                                <span role="img" aria-label="lightning">⚡</span> Fastest Answers
+                            </h3>
+                            {fastestPlayers && fastestPlayers.length > 0 ? (
+                                <ol className="space-y-1">
+                                    {fastestPlayers.map((p, idx) => (
+                                        <li key={p.id} className="flex justify-between text-lg">
+                                            <span className="font-medium">{idx + 1}. {p.name}</span>
+                                            <span className="text-slate-400">{(p.answerTime / 1000).toFixed(1)}s</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            ) : (
+                                <p className="text-slate-400 text-sm">No answers yet.</p>
+                            )}
+                        </div>
+                        {/* Answer Distribution */}
+                        {lobbyState.answerRevealed && (
+                            <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-4">
+                                <h3 className="text-xl font-bold mb-2">Answer Distribution</h3>
+                                {Object.keys(answerDistribution).length > 0 ? (
+                                    <ul className="space-y-1">
+                                        {Object.entries(answerDistribution).map(([key, count]) => (
+                                            <li key={key} className="flex justify-between text-lg font-semibold">
+                                                <span>{key}</span>
+                                                <span>{count}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-slate-400 text-sm">No answers recorded.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
