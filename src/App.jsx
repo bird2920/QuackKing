@@ -132,6 +132,9 @@ function TriviaGame({ prefillFromRoute }) {
         players={players}
         userId={userId}
         isHost={isHost}
+        auth={auth}
+        authUser={authUser}
+        onRequestAccount={openAuthModal}
       />
     );
   } else if (lobbyState?.status === "PLAYING" && isHost) {

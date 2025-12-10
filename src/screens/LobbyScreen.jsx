@@ -5,6 +5,7 @@ import { requestAiQuestions, getAIStatus } from "../helpers/aiClient";
 import { updateDoc, getDocs, writeBatch, deleteDoc, setDoc } from "firebase/firestore";
 import QuestionsEditor from "../components/QuestionsEditor";
 import PlayerAchievements from "../components/PlayerAchievements";
+import ProfilePanel from "../components/ProfilePanel";
 import { achievementBus, getAchievementService } from "../services/achievements";
 import QuackKingLogo from "../components/QuackKingLogo.jsx";
 
@@ -89,7 +90,17 @@ const sliceSuggestions = (list, startIndex, count) => {
 };
 
 // Lobby screen allows host to upload or generate questions and start game.
-export default function LobbyScreen({ db, gameCode, lobbyState, players, userId, isHost }) {
+export default function LobbyScreen({
+  db,
+  gameCode,
+  lobbyState,
+  players,
+  userId,
+  isHost,
+  auth,
+  authUser,
+  onRequestAccount,
+}) {
   const DEFAULT_GENERATE_COUNT = 5;
   const MIN_GENERATE_QUESTIONS = 1;
   const MAX_GENERATE_QUESTIONS = 50;
@@ -108,8 +119,9 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const [playerSuggestionIndex, setPlayerSuggestionIndex] = useState(0);
   const [logoFailed, setLogoFailed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showManualUpload, setShowManualUpload] = useState(false);
   const [showEditor, setShowEditor] = useState(true);
+  const [questionTab, setQuestionTab] = useState("ai");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
   const copyTimeoutRef = useRef(null);
@@ -447,6 +459,27 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
           <QuackKingLogo className="text-xl sm:text-2xl font-black" />
         )}
       </div>
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+        <button
+          type="button"
+          onClick={() => setIsProfileOpen(true)}
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-lg shadow-black/30 transition hover:-translate-y-[1px] hover:border-amber-200/70 hover:bg-white/20"
+          aria-label="Open profile"
+        >
+          <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300/20 via-transparent to-purple-500/20 opacity-0 transition group-hover:opacity-100" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="h-6 w-6 relative"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+          </svg>
+        </button>
+      </div>
       <div className="w-full max-w-6xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Game Lobby</p>
@@ -530,7 +563,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                         </p>
                         <h3 className="text-2xl font-bold mt-2">Generate questions first</h3>
                         <p className="text-sm text-purple-100/70">
-                          AI is the fastest way. CSV upload and the editor stay tucked away unless you need them.
+                          AI is the fastest way. Swap tabs if you need a CSV drop-in instead.
                         </p>
                       </div>
                       <div className="text-right">
@@ -541,7 +574,27 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-6">
+                    <div className="flex flex-wrap gap-2 rounded-full bg-white/5 p-1 text-xs text-purple-100/80">
+                      {[
+                        { id: "ai", label: "AI Generation" },
+                        { id: "csv", label: "CSV Manual Entry" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setQuestionTab(tab.id)}
+                          className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${
+                            questionTab === tab.id
+                              ? "bg-slate-900 text-amber-100 shadow-sm shadow-black/40"
+                              : "text-purple-100/80 hover:bg-white/10"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {questionTab === "ai" && (
                       <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
                         <div className="p-6 space-y-4">
                           <div>
@@ -638,7 +691,9 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                           )}
                         </div>
                       </div>
+                    )}
 
+                    {questionTab === "csv" && (
                       <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
                         <div className="p-6 space-y-3">
                           <div className="flex items-start justify-between gap-3">
@@ -649,44 +704,29 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               </p>
                               <h3 className="text-2xl font-bold mt-2">Paste CSV rows</h3>
                               <p className="text-sm text-purple-100/70">
-                                Keep it collapsed unless you need a custom set.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowManualUpload((prev) => !prev)}
-                              className="text-xs font-semibold text-amber-100/90 underline-offset-4 hover:underline"
-                            >
-                              {showManualUpload ? "Hide" : "Show"}
-                            </button>
-                          </div>
-
-                          {showManualUpload && (
-                            <>
-                              <p className="text-sm text-purple-100/70">
                                 Format: Question, Answer, Option1, Option2, Option3.
                               </p>
-                              <textarea
-                                value={csvText}
-                                onChange={(e) => setCsvText(e.target.value)}
-                                placeholder={'Q: What is 2+2?,4,2,3,5'}
-                                className="w-full min-h-[130px] rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 font-mono text-sm text-white placeholder:text-purple-200/60 focus:outline-none focus:ring-2 focus:ring-blue-300/60 resize-none"
-                              />
-                              <button
-                                onClick={handleCSVUpload}
-                                disabled={!csvText.trim()}
-                                className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50"
-                              >
-                                Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
-                              </button>
-                              <p className="text-xs text-purple-100/60">
-                                Tip: copy rows straight from Sheets/Excel and drop them here.
-                              </p>
-                            </>
-                          )}
+                            </div>
+                          </div>
+                          <textarea
+                            value={csvText}
+                            onChange={(e) => setCsvText(e.target.value)}
+                            placeholder={'Q: What is 2+2?,4,2,3,5'}
+                            className="w-full min-h-[130px] rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 font-mono text-sm text-white placeholder:text-purple-200/60 focus:outline-none focus:ring-2 focus:ring-blue-300/60 resize-none"
+                          />
+                          <button
+                            onClick={handleCSVUpload}
+                            disabled={!csvText.trim()}
+                            className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50"
+                          >
+                            Upload {csvText.split("\n").filter((l) => l.trim()).length} Questions
+                          </button>
+                          <p className="text-xs text-purple-100/60">
+                            Tip: copy rows straight from Sheets/Excel and drop them here.
+                          </p>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {error && (
                       <div className="rounded-2xl border border-rose-400/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
@@ -1041,6 +1081,17 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         </div>
         <p className="text-xs text-purple-100/60 text-center break-all">User ID: {userId}</p>
       </div>
+      {isProfileOpen && (
+        <ProfilePanel
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          db={db}
+          auth={auth}
+          authUser={authUser}
+          userId={userId}
+          onRequestAccount={onRequestAccount}
+        />
+      )}
     </div>
   );
 }
