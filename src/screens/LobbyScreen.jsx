@@ -237,6 +237,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
         status: "PLAYING",
         currentQuestionIndex: 0,
         currentQuestionStartTime: Date.now(),
+        lastHostActivity: Date.now(),
+        pruneAfter: null,
       });
       if (typeof window?.setTestMode === "function") {
         window.setTestMode(false);
@@ -284,6 +286,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
       await updateDoc(gameDocRef, {
         questions,
         status: "UPLOAD",
+        lastHostActivity: Date.now(),
       });
       // Defer scroll slightly to allow React + Firestore snapshot to render editor
       setTimeout(() => {
@@ -352,6 +355,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
           questions: formatted,
           status: "UPLOAD",
           currentTheme: topic,
+          lastHostActivity: Date.now(),
         });
         setCsvText("");
         setGeneratorTopic(topicOverride ? topic : "");
@@ -421,7 +425,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
   const handleSaveQuestions = useCallback(async (updatedQuestions) => {
     try {
       const gameDocRef = getGameDocPath(db, gameCode);
-      await updateDoc(gameDocRef, { questions: updatedQuestions });
+      await updateDoc(gameDocRef, { questions: updatedQuestions, lastHostActivity: Date.now() });
       setError("");
     } catch (e) {
       console.error("Error saving edited questions:", e);
@@ -766,6 +770,8 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                             status: "PLAYING",
                             currentQuestionIndex: 0,
                             currentQuestionStartTime: Date.now(),
+                            lastHostActivity: Date.now(),
+                            pruneAfter: null,
                           });
                           if (typeof window.setTestMode === "function") {
                             window.setTestMode(true);
@@ -811,7 +817,7 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                             const currentAuto = lobbyState?.autoHost ?? true;
                             const newAuto = !currentAuto;
                             const gameDocRef = getGameDocPath(db, gameCode);
-                            updateDoc(gameDocRef, { autoHost: newAuto });
+                            updateDoc(gameDocRef, { autoHost: newAuto, lastHostActivity: Date.now() });
 
                             // Persist to user profile
                             if (userId) {
@@ -847,10 +853,10 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               max="120"
                               value={lobbyState?.timerSettings?.revealTime ?? 30}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                if (!isNaN(val)) {
-                                  const gameDocRef = getGameDocPath(db, gameCode);
-                                  updateDoc(gameDocRef, { "timerSettings.revealTime": val });
+                                  const val = parseInt(e.target.value, 10);
+                                  if (!isNaN(val)) {
+                                    const gameDocRef = getGameDocPath(db, gameCode);
+                                    updateDoc(gameDocRef, { "timerSettings.revealTime": val, lastHostActivity: Date.now() });
 
                                   // Persist to user profile
                                   if (userId) {
@@ -880,10 +886,10 @@ export default function LobbyScreen({ db, gameCode, lobbyState, players, userId,
                               max="60"
                               value={lobbyState?.timerSettings?.nextQuestionTime ?? 3}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                if (!isNaN(val)) {
-                                  const gameDocRef = getGameDocPath(db, gameCode);
-                                  updateDoc(gameDocRef, { "timerSettings.nextQuestionTime": val });
+                                  const val = parseInt(e.target.value, 10);
+                                  if (!isNaN(val)) {
+                                    const gameDocRef = getGameDocPath(db, gameCode);
+                                    updateDoc(gameDocRef, { "timerSettings.nextQuestionTime": val, lastHostActivity: Date.now() });
 
                                   // Persist to user profile
                                   if (userId) {

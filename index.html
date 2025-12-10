@@ -17,29 +17,32 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      // Inject globals before bundle loads
-      // TriviaGame.jsx reads these global variables
-      
-      window.__app_id = "my-app";
-      
-      // Your Firebase configuration
-      // Get this from: Firebase Console > Project Settings > Your apps > Web
-      window.__firebase_config = JSON.stringify({
-        apiKey: "AIzaSyCZPIN3MKCBR39XR7LOTtHP-cJSs9UTqxs",
-        authDomain: "smartish-ce919.firebaseapp.com",
-        projectId: "smartish-ce919",
-        storageBucket: "smartish-ce919.firebasestorage.app",
-        messagingSenderId: "698303764031",
-        appId: "1:698303764031:web:b815d90fb9ba36ce080a8a"
-      });
-      
-      // Optional: Custom auth token (usually null for anonymous auth)
-      window.__initial_auth_token = null;
-      
-      // Optional: Gemini API key for AI question generation
-      // Get this from: https://aistudio.google.com/app/apikey
-      window.GEMINI_API_KEY = ""; // Add your key here if you want AI questions
+    <script type="module">
+      // Inject globals before bundle loads; hosting can override these if provided earlier.
+      const env = import.meta.env || {};
+
+      if (typeof window.__app_id === "undefined") {
+        window.__app_id = env.VITE_APP_ID || "default-app-id";
+      }
+
+      if (typeof window.__firebase_config === "undefined") {
+        window.__firebase_config = JSON.stringify({
+          apiKey: env.VITE_FIREBASE_API_KEY || "",
+          authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "",
+          projectId: env.VITE_FIREBASE_PROJECT_ID || "",
+          storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "",
+          messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+          appId: env.VITE_FIREBASE_APP_ID || "",
+        });
+      }
+
+      if (typeof window.__initial_auth_token === "undefined") {
+        window.__initial_auth_token = null;
+      }
+
+      if (typeof window.GEMINI_API_KEY === "undefined") {
+        window.GEMINI_API_KEY = env.VITE_GEMINI_API_KEY || "";
+      }
     </script>
     <script type="module" src="/main.jsx"></script>
   </body>

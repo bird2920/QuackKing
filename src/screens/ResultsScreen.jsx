@@ -102,6 +102,7 @@ export default function ResultsScreen({
         currentQuestionIndex: 0,
         currentQuestionStartTime: null,
         answerRevealed: false,
+        lastHostActivity: Date.now(),
       });
     } catch (e) {
       console.error("❌ Error starting new round:", e);

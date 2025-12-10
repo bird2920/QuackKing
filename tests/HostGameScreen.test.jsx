@@ -86,7 +86,7 @@ describe('HostGameScreen', () => {
 
     expect(updateDoc).not.toHaveBeenCalledWith(
       expect.anything(),
-      { answerRevealed: true },
+      expect.objectContaining({ answerRevealed: true }),
     );
   });
 
@@ -127,7 +127,7 @@ describe('HostGameScreen', () => {
 
     expect(updateDoc).toHaveBeenCalledWith(
       expect.anything(),
-      { answerRevealed: true },
+      expect.objectContaining({ answerRevealed: true }),
     );
   });
 

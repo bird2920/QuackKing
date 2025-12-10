@@ -36,8 +36,8 @@ cd trivia-game
 npm install
 
 # Configure Firebase (see QUICKSTART.md for screenshots)
-# Option A: edit index.html and paste your firebaseConfig object
-# Option B: create .env.local with VITE_FIREBASE_* variables
+# Preferred: create .env.local with VITE_FIREBASE_* variables
+# (Fallback for special hosting: set window.__firebase_config in index.html)
 
 npm run validate   # confirms Firebase config works
 npm run dev        # launches http://localhost:5173
@@ -67,19 +67,17 @@ Helpful references:
 ## ⚙️ Configuration
 
 ### Firebase
-QuackKing expects a global config object before React mounts. In `index.html`:
-```html
-<script>
-  window.__firebase_config = JSON.stringify({
-    apiKey: "YOUR_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT",
-    appId: "YOUR_APP_ID",
-    // ...
-  });
-</script>
+Add secrets to `.env.local` (git-ignored) so keys stay out of commits:
 ```
-Alternatively, define the same values in `.env.local` using `VITE_FIREBASE_*` variables (see `QUICKSTART.md`).
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
+VITE_FIREBASE_APP_ID=1:123456789012:web:abc123
+VITE_APP_ID=quackking   # Used as Firestore namespace
+```
+`npm run validate` reads these values. If you must inject at runtime (non-Vite hosting), you can still set `window.__firebase_config` / `window.__app_id` in `index.html`, but env vars are preferred to avoid committing secrets.
 
 ### Security Rules
 Deploy the shipped `firestore.rules` to prevent score tampering and enforce host-only controls:
@@ -202,7 +200,7 @@ npm run build
 ---
 
 ## 🐛 Troubleshooting Cheatsheet
-- **Firebase initialization failed** – ensure `window.__firebase_config` (or env vars) are populated and `npm run validate` passes.
+- **Firebase initialization failed** – ensure `.env.local` has VITE_FIREBASE_* values (or `window.__firebase_config` is set) and `npm run validate` passes.
 - **Missing permissions** – deploy `firestore.rules`, enable Anonymous Auth, and confirm the Firebase project ID matches.
 - **AI button disabled** – set `VITE_AI_PROXY_URL` or `VITE_GEMINI_API_KEY`.
 - **Players overwrite each other** – read `TESTING_MULTIPLAYER.md` (each browser profile gets one anonymous user).

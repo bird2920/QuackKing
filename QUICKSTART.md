@@ -5,8 +5,8 @@
 1. **Create Firebase project** at [console.firebase.google.com](https://console.firebase.google.com)
 2. **Enable Firestore** (test mode) and **Anonymous Auth**
 3. **Copy config** from Project Settings > Your apps > Web
-4. **Paste into** `index.html` (replace the YOUR_KEY placeholders)
-5. **Deploy rules** from `firestore.rules` 
+4. **Create `.env.local`** with your Firebase keys (VITE_FIREBASE_*)
+5. **Deploy rules** from `firestore.rules`
 6. Run `npm run dev` and play!
 
 ---
@@ -57,32 +57,25 @@ const firebaseConfig = {
 };
 ```
 
-### 5️⃣ Update Config (Choose One Method)
+### 5️⃣ Update Config (Preferred: .env.local)
 
-#### Method A: Quick (Hardcode in index.html)
+Create `.env.local` in the project root (git-ignored):
 
-Open `index.html` and replace placeholders around line 15:
-
-```javascript
-window.__firebase_config = JSON.stringify({
-  apiKey: "AIzaSyA...",  // ← paste your actual values
-  authDomain: "trivia-game-abc123.firebaseapp.com",
-  projectId: "trivia-game-abc123",
-  storageBucket: "trivia-game-abc123.firebasestorage.app",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abc123def456"
-});
+```
+VITE_FIREBASE_API_KEY=AIzaSyA...
+VITE_FIREBASE_AUTH_DOMAIN=trivia-game-abc123.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=trivia-game-abc123
+VITE_FIREBASE_STORAGE_BUCKET=trivia-game-abc123.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
+VITE_FIREBASE_APP_ID=1:123456789012:web:abc123def456
+VITE_APP_ID=quackking
 ```
 
-#### Method B: Secure (Environment Variables)
+Tip: `cp .env.example .env.local` to start from placeholders, then fill in your real values.
 
-```bash
-# Create .env.local file
-cp .env.example .env.local
+Restart `npm run dev` after saving.
 
-# Edit .env.local with your values
-# Then restart dev server
-```
+Need a runtime override instead? You can still set `window.__firebase_config` / `window.__app_id` in `index.html`, but `.env.local` keeps secrets out of git.
 
 ### 6️⃣ Deploy Security Rules
 
@@ -120,7 +113,7 @@ Open http://localhost:5173
 
 ### "Firebase initialization failed"
 - Check console for specific error
-- Verify config values are correct (no "YOUR_KEY" placeholders)
+- Verify `.env.local` values are correct (no placeholders)
 - Ensure no trailing commas or syntax errors
 
 ### "Missing or insufficient permissions"
@@ -167,4 +160,4 @@ Monitor usage:
 3. Validate config: `npm run validate`
 4. Check browser console for errors (F12)
 
-**Most common issue:** Forgot to replace YOUR_KEY placeholders in index.html!
+**Most common issue:** `.env.local` missing VITE_FIREBASE_* values (restart `npm run dev` after adding them).

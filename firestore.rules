@@ -10,8 +10,15 @@ service cloud.firestore {
       allow create: if request.auth != null;
       
       // Only the host can update the game
-      allow update: if request.auth != null && 
-                       request.auth.uid == resource.data.hostUserId;
+      allow update: if request.auth != null && (
+        // Host can always update
+        request.auth.uid == resource.data.hostUserId ||
+        // Players can clear pruneAfter when they join to keep the lobby alive
+        (
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['pruneAfter']) &&
+          request.resource.data.pruneAfter == null
+        )
+      );
       
       // Only the host can delete the game
       allow delete: if request.auth != null && 

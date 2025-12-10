@@ -77,7 +77,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     // Mark answer as revealed in Firestore
     try {
       const gameDocRef = getGameDocPath(db, gameCode);
-      await updateDoc(gameDocRef, { answerRevealed: true });
+      await updateDoc(gameDocRef, { answerRevealed: true, lastHostActivity: Date.now() });
     } catch (err) {
       console.error("❌ Error updating answerRevealed:", err);
     }
@@ -148,6 +148,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
         currentQuestionIndex: lobbyState.currentQuestionIndex + 1,
         currentQuestionStartTime: Date.now(),
         answerRevealed: false,
+        lastHostActivity: Date.now(),
       });
 
       setRevealed(false);
@@ -164,6 +165,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       const gameDocRef = getGameDocPath(db, gameCode);
       await updateDoc(gameDocRef, {
         status: "RESULTS",
+        lastHostActivity: Date.now(),
       });
 
       const playersForEvent = players.map((player) => ({

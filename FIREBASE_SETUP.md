@@ -45,20 +45,21 @@ const firebaseConfig = {
 };
 ```
 
-## Step 5: Update index.html
+## Step 5: Add .env.local (preferred)
 
-Open `index.html` and replace the placeholder config:
+Create `.env.local` in the project root (git-ignored) and paste your values:
 
-```html
-window.__firebase_config = JSON.stringify({
-  apiKey: "YOUR_ACTUAL_KEY_HERE",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123"
-});
 ```
+VITE_FIREBASE_API_KEY=YOUR_KEY
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+VITE_FIREBASE_APP_ID=1:123456789:web:abc123
+VITE_APP_ID=quackking
+```
+
+Vite injects these at build/dev time. If you must set them at runtime instead, you can still provide `window.__firebase_config` / `window.__app_id` in `index.html`, but using `.env.local` keeps secrets out of git.
 
 ## Step 6: Deploy Security Rules
 
@@ -119,9 +120,9 @@ service cloud.firestore {
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Click "Create API Key"
 3. Copy the key
-4. Add to `index.html`:
-   ```javascript
-   window.GEMINI_API_KEY = "YOUR_GEMINI_KEY_HERE";
+4. Add to `.env.local` (preferred) or `index.html`:
+   ```bash
+   VITE_GEMINI_API_KEY=YOUR_GEMINI_KEY_HERE
    ```
 
 **Note:** For production, move API keys to a backend proxy for security!

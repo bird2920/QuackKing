@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { onSnapshot, getDoc, setDoc } from "firebase/firestore";
+import { onSnapshot, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import {
     getGameDocPath,
@@ -11,6 +11,7 @@ import { generateGameCode } from "../helpers/codeUtils";
 import { achievementBus } from "../services/achievements";
 
 const SESSION_STORAGE_KEY = "trivia:lastSession";
+const EMPTY_GAME_TTL_MS = 24 * 60 * 60 * 1000;
 
 const readPersistedSession = () => {
     if (typeof window === "undefined") return null;
@@ -40,6 +41,8 @@ const clearPersistedSession = () => {
         console.warn("Failed to clear session cache:", err);
     }
 };
+
+const HOST_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function useGameLogic(
     db,
@@ -107,11 +110,11 @@ export function useGameLogic(
 
     // 🔄 Auto-resume if we have a cached session (helps mobile users returning mid-game)
     useEffect(() => {
-        if (!db || !userId || gameCode || pendingResume) return;
-        // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
-        if (resumeGuardCode) return;
-        const cached = readPersistedSession();
-        if (!cached || cached.userId !== userId || !cached.gameCode) return;
+            if (!db || !userId || gameCode || pendingResume) return;
+            // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
+            if (resumeGuardCode) return;
+            const cached = readPersistedSession();
+            if (!cached || cached.userId !== userId || !cached.gameCode) return;
 
         let isCancelled = false;
         (async () => {
@@ -123,6 +126,7 @@ export function useGameLogic(
                 }
                 const [gameSnap, playerSnap] = await Promise.all(checks);
                 const gameExists = gameSnap?.exists();
+                const gameData = gameSnap?.data();
                 const isHostOfGame = gameExists && gameSnap.data()?.hostUserId === userId;
                 const playerExists = cached.role === "host" ? isHostOfGame : playerSnap?.exists();
 
@@ -130,6 +134,17 @@ export function useGameLogic(
                 if (!gameExists || !playerExists) {
                     clearPersistedSession();
                     return;
+                }
+
+                if (cached.role === "host") {
+                    const lastHostActivity = gameData?.lastHostActivity;
+                    if (
+                        typeof lastHostActivity === "number" &&
+                        Date.now() - lastHostActivity > HOST_SESSION_MAX_AGE_MS
+                    ) {
+                        clearPersistedSession();
+                        return;
+                    }
                 }
 
                 if (isCancelled) return;
@@ -200,6 +215,8 @@ export function useGameLogic(
                 currentQuestionStartTime: null,
                 timerSettings: initialTimerSettings,
                 autoHost: initialAutoHost,
+                lastHostActivity: Date.now(),
+                pruneAfter: Timestamp.fromMillis(Date.now() + EMPTY_GAME_TTL_MS),
             });
 
             // NOTE: We no longer create a player document for the host.
@@ -266,6 +283,7 @@ export function useGameLogic(
                     lastAnswer: null,
                     timestamp: Date.now(),
                 });
+                await updateDoc(gameDocRef, { pruneAfter: null });
 
                 achievementBus.emit({
                     type: "GAME_JOINED",
