@@ -157,14 +157,58 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
     );
   }
 
+  // Calculate aggregate statistics
+  const totalGames = games.length;
+  const totalScore = games.reduce((sum, g) => sum + (g.score || 0), 0);
+  const avgScore = totalGames > 0 ? Math.round(totalScore / totalGames) : 0;
+  const placements = games.map(g => g.placement || Infinity).filter(p => p !== Infinity);
+  const bestPlacement = placements.length > 0 ? Math.min(...placements) : null;
+  const totalCorrect = games.reduce((sum, g) => sum + (g.correct || 0), 0);
+  const totalAnswered = games.reduce((sum, g) => sum + (g.answered || 0), 0);
+  const overallAccuracy = totalAnswered > 0
+    ? Math.round((totalCorrect / totalAnswered) * 100)
+    : 0;
+
   return (
-    <div className="mt-4 space-y-2">
+    <div className="mt-4 space-y-4">
+      {/* Aggregate Statistics Dashboard */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+            Total games
+          </p>
+          <p className="text-2xl font-bold text-white mt-1">{totalGames}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+            Avg score
+          </p>
+          <p className="text-2xl font-bold text-white mt-1">{avgScore}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+            Best rank
+          </p>
+          <p className="text-2xl font-bold text-white mt-1">
+            {bestPlacement !== null ? `#${bestPlacement}` : '—'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+            Accuracy
+          </p>
+          <p className="text-2xl font-bold text-white mt-1">{overallAccuracy}%</p>
+        </div>
+      </div>
+
+      {/* Games List Header */}
       <div className="flex items-center justify-between text-xs text-purple-100/70">
         <span>Saved for ID: <span className="font-mono text-amber-100">{userId}</span></span>
         <span>{games.length} game{games.length === 1 ? "" : "s"}</span>
       </div>
 
-      <div className="mt-1 divide-y divide-white/5 rounded-2xl border border-white/10 bg-slate-900/70">
+      {/* Games List */}
+      <div className="divide-y divide-white/5 rounded-2xl border border-white/10 bg-slate-900/70">
         {games.map((game, index) => {
           const accuracy =
             game.answered && game.answered > 0
@@ -223,8 +267,13 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
   );
 }
 
-function AchievementsList({ achievements }) {
-  if (!achievements?.length) {
+function AchievementsList({ achievements, achievementService }) {
+  // Get all core achievements to show locked ones
+  const allAchievements = achievementService?.getAllCoreAchievements() || [];
+  const unlockedIds = new Set(achievements.map(a => a.achievement.id));
+  const locked = allAchievements.filter(a => !unlockedIds.has(a.id)).slice(0, 3);
+
+  if (!achievements?.length && !locked.length) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-purple-100/80">
         Unlock achievements during games to see them here.
@@ -233,43 +282,84 @@ function AchievementsList({ achievements }) {
   }
 
   return (
-    <div className="mt-4 space-y-3">
-      <div className="flex items-center justify-between text-xs text-purple-100/80">
-        <span>Unlocked achievements</span>
-        <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-amber-100">
-          {achievements.length} total
-        </span>
-      </div>
+    <div className="mt-4 space-y-6">
+      {/* Unlocked Achievements */}
+      {achievements?.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-purple-100/80">
+            <span>Unlocked achievements</span>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-amber-100">
+              {achievements.length} unlocked
+            </span>
+          </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {achievements.map((entry) => (
-          <div
-            key={entry.achievement.id}
-            className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-2xl border border-white/10 bg-slate-900/70 p-3 shadow-inner shadow-black/30"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-xl">
-                {ACHIEVEMENT_ICON_MAP[entry.achievement.id] || "🏅"}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">
-                  {entry.achievement.name}
-                </p>
-                {entry.unlock?.timestamp && (
-                  <p className="mt-0.5 text-[11px] text-purple-200/80">
-                    Unlocked {formatDate(entry.unlock.timestamp)}
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {achievements.map((entry) => (
+              <div
+                key={entry.achievement.id}
+                className="min-w-[220px] max-w-[260px] flex-shrink-0 rounded-2xl border border-white/10 bg-slate-900/70 p-3 shadow-inner shadow-black/30"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-xl">
+                    {ACHIEVEMENT_ICON_MAP[entry.achievement.id] || "🏅"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {entry.achievement.name}
+                    </p>
+                    {entry.unlock?.timestamp && (
+                      <p className="mt-0.5 text-[11px] text-purple-200/80">
+                        Unlocked {formatDate(entry.unlock.timestamp)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {entry.achievement.description && (
+                  <p className="mt-2 text-xs text-purple-100/80">
+                    {entry.achievement.description}
                   </p>
                 )}
               </div>
-            </div>
-            {entry.achievement.description && (
-              <p className="mt-2 text-xs text-purple-100/80">
-                {entry.achievement.description}
-              </p>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Locked Achievements */}
+      {locked.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-purple-100/70">
+            <span>Next to unlock</span>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-purple-300/60">
+              {allAchievements.length - unlockedIds.size} remaining
+            </span>
+          </div>
+          <div className="grid gap-3">
+            {locked.map(achievement => (
+              <div
+                key={achievement.id}
+                className="rounded-xl border border-white/5 bg-slate-900/40 p-3 opacity-70 hover:opacity-90 transition-opacity"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-lg grayscale">
+                    🔒
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white/70">
+                      {achievement.name}
+                    </p>
+                    {achievement.description && (
+                      <p className="text-xs text-purple-100/60 mt-0.5">
+                        {achievement.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -312,9 +402,8 @@ function GameDetailsSheet({ game, onClose }) {
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`w-full max-w-[420px] transform overflow-hidden rounded-t-3xl border border-white/10 bg-slate-900/90 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] transition-all duration-300 ease-out md:rounded-3xl ${
-          visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
+        className={`w-full max-w-[420px] transform overflow-hidden rounded-t-3xl border border-white/10 bg-slate-900/90 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] transition-all duration-300 ease-out md:rounded-3xl ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+          }`}
       >
         <div className="relative px-5 pb-10 pt-5">
           <div className="mb-2 flex items-start justify-between gap-3">
@@ -563,11 +652,10 @@ function AccountSection({ auth, authUser, onRequestAccount, userId }) {
 
         {message && (
           <div
-            className={`rounded-xl border px-3 py-2 text-sm ${
-              status === "error"
-                ? "border-rose-400/60 bg-rose-500/10 text-rose-50"
-                : "border-emerald-300/50 bg-emerald-500/10 text-emerald-50"
-            }`}
+            className={`rounded-xl border px-3 py-2 text-sm ${status === "error"
+              ? "border-rose-400/60 bg-rose-500/10 text-rose-50"
+              : "border-emerald-300/50 bg-emerald-500/10 text-emerald-50"
+              }`}
           >
             {message}
           </div>
@@ -591,6 +679,20 @@ export default function ProfilePanel({
   const { games, status: statsStatus, error: statsError } = useUserStats(db, userId, isOpen);
   const achievements = useUserAchievements(achievementService, userId, isOpen);
   const [selectedGame, setSelectedGame] = useState(null);
+  const dialogRef = React.useRef(null);
+  const closeButtonRef = React.useRef(null);
+
+  // Focus management - trap focus on open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Focus the close button when modal opens
+    const focusTimer = setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 100);
+
+    return () => clearTimeout(focusTimer);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -618,6 +720,7 @@ export default function ProfilePanel({
     <div
       className="fixed inset-0 z-50 flex items-start justify-end bg-slate-950/80 px-4 py-6 backdrop-blur-xl"
       onClick={onClose}
+      role="presentation"
     >
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none opacity-70 mix-blend-screen">
@@ -625,6 +728,11 @@ export default function ProfilePanel({
       </div>
 
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-panel-title"
+        aria-describedby="profile-panel-description"
         className="relative w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/95 via-purple-950/85 to-indigo-950/85 p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.85)]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -634,25 +742,50 @@ export default function ProfilePanel({
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-purple-100/80">
               Profile
             </div>
-            <h2 className="text-3xl font-black text-white">
+            <h2 id="profile-panel-title" className="text-3xl font-black text-white">
               Your games, achievements, and access
             </h2>
-            <p className="text-sm text-purple-100/80">
+            <p id="profile-panel-description" className="text-sm text-purple-100/80">
               Showing data for ID{" "}
               <span className="font-mono text-amber-100">{userId || "guest"}</span>
             </p>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
             className="rounded-full p-2 text-purple-100 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close profile"
+            aria-label="Close profile panel"
           >
             ✕
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="mt-5 flex flex-wrap gap-2 rounded-full bg-white/5 p-1 text-xs text-purple-100/80">
+        <div
+          role="tablist"
+          aria-label="Profile sections"
+          className="mt-5 flex flex-wrap gap-2 rounded-full bg-white/5 p-1 text-xs text-purple-100/80"
+          onKeyDown={(e) => {
+            const tabs = ["games", "achievements", "account"];
+            const currentIndex = tabs.indexOf(activeTab);
+
+            if (e.key === "ArrowRight") {
+              e.preventDefault();
+              const nextIndex = (currentIndex + 1) % tabs.length;
+              setActiveTab(tabs[nextIndex]);
+            } else if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+              setActiveTab(tabs[prevIndex]);
+            } else if (e.key === "Home") {
+              e.preventDefault();
+              setActiveTab(tabs[0]);
+            } else if (e.key === "End") {
+              e.preventDefault();
+              setActiveTab(tabs[tabs.length - 1]);
+            }
+          }}
+        >
           {[
             { id: "games", label: "Games" },
             { id: "achievements", label: "Achievements" },
@@ -660,13 +793,17 @@ export default function ProfilePanel({
           ].map((tab) => (
             <button
               key={tab.id}
+              id={`${tab.id}-tab`}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`${tab.id}-panel`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${
-                activeTab === tab.id
-                  ? "bg-slate-900 text-amber-100 shadow-sm shadow-black/40"
-                  : "text-purple-100/80 hover:bg-white/10"
-              }`}
+              className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${activeTab === tab.id
+                ? "bg-slate-900 text-amber-100 shadow-sm shadow-black/40"
+                : "text-purple-100/80 hover:bg-white/10"
+                }`}
             >
               {tab.label}
             </button>
@@ -676,7 +813,12 @@ export default function ProfilePanel({
         {/* Content */}
         <div className="mt-6">
           {activeTab === "games" && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/20">
+            <div
+              role="tabpanel"
+              id="games-panel"
+              aria-labelledby="games-tab"
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/20"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.25em] text-purple-200/80">
@@ -706,7 +848,12 @@ export default function ProfilePanel({
           )}
 
           {activeTab === "achievements" && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/20">
+            <div
+              role="tabpanel"
+              id="achievements-panel"
+              aria-labelledby="achievements-tab"
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/20"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.25em] text-purple-200/80">
@@ -720,17 +867,23 @@ export default function ProfilePanel({
                   </p>
                 </div>
               </div>
-              <AchievementsList achievements={achievements} />
+              <AchievementsList achievements={achievements} achievementService={achievementService} />
             </div>
           )}
 
           {activeTab === "account" && (
-            <AccountSection
-              auth={auth}
-              authUser={authUser}
-              onRequestAccount={onRequestAccount}
-              userId={userId}
-            />
+            <div
+              role="tabpanel"
+              id="account-panel"
+              aria-labelledby="account-tab"
+            >
+              <AccountSection
+                auth={auth}
+                authUser={authUser}
+                onRequestAccount={onRequestAccount}
+                userId={userId}
+              />
+            </div>
           )}
         </div>
       </div>
