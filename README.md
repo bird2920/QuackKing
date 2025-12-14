@@ -1,6 +1,6 @@
 # 🎮 QuackKing – Real-Time Multiplayer Trivia
 
-QuackKing is a Jackbox-style trivia experience built with React, Vite, Tailwind CSS, and Firebase. Hosts spin up a lobby, invite friends with a four-letter code, load or generate questions, and run the entire show from one screen while players answer from any device.
+QuackKing is a trivia experience built with React, Vite, Tailwind CSS, and Firebase. Spin up a lobby, invite friends with a four-letter code or QR, generate or import questions, and run the whole show from one screen while players answer from any device.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Firebase](https://img.shields.io/badge/firebase-10.12-orange.svg)
@@ -10,14 +10,12 @@ QuackKing is a Jackbox-style trivia experience built with React, Vite, Tailwind 
 
 ## ✨ Highlights
 
-- 🎯 **Real-time lobby + gameplay** powered by Firestore listeners
-- 🤖 **AI question generator** (Gemini or bring-your-own proxy) plus CSV import & live editor
-- 📋 **Host dashboard** with player suggestions, “Test Alone” mode, and copy/share invite buttons
-- 🧠 **Questions Editor** for on-the-fly tweaks, reordering options, or deleting rounds
-- 🏆 **Automatic scoring + leaderboards** with per-question timers
-- 📱 **Responsive layout** tuned for laptops, tablets, and TV displays (no top-level scrolling required)
-- 🔐 **Security-first** Firestore rules & anonymous auth setup scripts
-- 🧪 **Vitest + Testing Library** coverage for UI flows and helper logic
+- 🔴 **Real-time Firestore lobby/gameplay** with auto-resume for hosts, saved timer settings, and hash routing for static hosting.
+- 🤖 **Question tools built-in**: Gemini or proxy-based AI generator, curated topic suggestions, CSV paste, and an inline Questions Editor.
+- 🖥️ **Spectator / TV mode** at `/#/spectator/:code` with QR join code, live timers, answer distribution, and leaderboard.
+- 📣 **Host dashboard**: copy/share invites, player topic suggestions, kick controls, Play Solo test mode, and auto-advance timers.
+- 🧑‍🤝‍🧑 **Accounts, stats, achievements**: anonymous by default; optional email sign-in to save history, unlock achievements, and load past games from the profile panel.
+- 🧪 **Production helpers**: Firestore security rules, `npm run validate` config check, Vitest + Testing Library suites, and sample CSV data.
 
 ---
 
@@ -25,33 +23,121 @@ QuackKing is a Jackbox-style trivia experience built with React, Vite, Tailwind 
 
 ### Requirements
 - Node.js 18+
-- npm or yarn
-- Firebase project with Firestore + Anonymous Auth enabled
-- (Optional) Gemini API key or an AI proxy endpoint for automatic question generation
+- npm
+- Firebase project with **Firestore** + **Anonymous Auth** enabled
+- Optional: **Email/Password auth** (for saved profiles), Gemini API key or AI proxy endpoint for automatic question generation
 
 ### Setup
 ```bash
-git clone https://github.com/yourname/trivia-game.git
+git clone <repo-url>
 cd trivia-game
+cp .env.example .env.local   # fill with your Firebase values
 npm install
 
-# Configure Firebase (see QUICKSTART.md for screenshots)
-# Preferred: create .env.local with VITE_FIREBASE_* variables
-# (Fallback for special hosting: set window.__firebase_config in index.html)
-
-npm run validate   # confirms Firebase config works
-npm run dev        # launches http://localhost:5173
+npm run validate             # confirms Firebase config works
+npm run dev                  # launches http://localhost:5173/#/
 ```
 
 Helpful references:
-- **[QUICKSTART.md](./QUICKSTART.md)** – 5‑minute Firebase walkthrough
-- **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** – detailed auth/rules/deploy steps
-- **[TESTING_MULTIPLAYER.md](./TESTING_MULTIPLAYER.md)** – simulate multiple players locally
-- **[ALTERNATIVES.md](./ALTERNATIVES.md)** – Supabase & other backend options
+- **QUICKSTART.md** – 5‑minute Firebase walkthrough
+- **FIREBASE_SETUP.md** – detailed auth/rules/deploy steps
+- **TESTING_MULTIPLAYER.md** – simulate multiple players locally
+- **ALTERNATIVES.md** – Supabase & other backend options
 
 ---
 
-## 🧩 Available Scripts
+## ⚙️ Configuration
+
+### Firebase (.env.local)
+Add secrets to `.env.local` (git-ignored) so keys stay out of commits:
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
+VITE_FIREBASE_APP_ID=1:123456789012:web:abc123
+VITE_APP_ID=quackking   # Firestore namespace for games/users
+```
+`npm run validate` reads these values and falls back to `window.__firebase_config` / `window.__app_id` in `index.html` when present. `VITE_APP_ID` scopes all Firestore documents; use a unique value per environment to avoid collisions.
+
+### Runtime overrides (non-Vite hosting)
+If you cannot inject env vars at build time, set `window.__firebase_config`, `window.__app_id`, `window.__initial_auth_token`, and `window.GEMINI_API_KEY` in `index.html` before the bundle loads.
+
+### AI Question Generation (optional)
+Two ways to enable the AI generator button in the lobby:
+1) **Proxy URL** – Set `VITE_AI_PROXY_URL` (or `window.AI_PROXY_URL`) to a backend that returns formatted questions.  
+2) **Gemini direct** – Provide `VITE_GEMINI_API_KEY` (or `window.GEMINI_API_KEY`). Uses `gemini-2.5-flash-preview-09-2025` with structured JSON responses (`src/helpers/geminiService.js`).
+
+When neither is configured, the UI automatically falls back to manual CSV uploads.
+
+### Security Rules
+Deploy the shipped `firestore.rules` to prevent score tampering and enforce host-only controls:
+```bash
+firebase deploy --only firestore:rules
+```
+
+---
+
+## 🧭 Game Flow & Features
+
+### Host tools
+- Create a lobby, resume cached host sessions, and copy/share invite links.
+- Launch Spectator/TV mode (`/#/spectator/{code}`) for QR join codes, live timers, and leaderboards.
+- Gather player topic suggestions, generate questions with AI, paste CSV rows, and edit in the Questions Editor.
+- Adjust auto-host + timers (reveal/next-question), drop players, start full games, or **Play Solo** test loops.
+
+### Player experience
+- Join with a name + 4-letter code from any device.
+- Suggest topics to the host, answer timed questions, and see instant scoring + leaderboards.
+- Unlock achievements and see recently earned badges in the lobby.
+
+### Spectator / TV mode
+- Big-screen view shows QR code, player count, timers, answer distribution, fastest responses, and current theme.
+
+### Accounts, profiles, achievements
+- Anonymous auth by default; optional email sign-up/sign-in + password reset to keep history.
+- Profile panel surfaces saved games and aggregates (score, accuracy, placements) stored in Firestore.
+- Achievements are tracked locally during a session and displayed in the lobby/profile.
+- Enable **Email/Password** in Firebase Console if you want sign-in beyond anonymous play.
+
+---
+
+## 🧩 Project Structure
+```
+trivia-game/
+├── LandingPage.jsx            # Marketing splash (/# route)
+├── main.jsx
+├── src/
+│   ├── App.jsx                # HashRouter + screen wiring
+│   ├── helpers/               # Firebase paths, AI client, scoring, user stats
+│   ├── hooks/useGameLogic.js  # Core lobby/game state + resume logic
+│   ├── components/
+│   │   ├── AccountModal.jsx
+│   │   ├── PlayerAchievements.jsx
+│   │   ├── ProfilePanel.jsx
+│   │   ├── QuestionsEditor.jsx
+│   │   └── QuackKingLogo.jsx
+│   ├── screens/
+│   │   ├── HomeScreen.jsx
+│   │   ├── LobbyScreen.jsx
+│   │   ├── HostGameScreen.jsx
+│   │   ├── PlayerGameScreen.jsx
+│   │   ├── ResultsScreen.jsx
+│   │   └── SpectatorScreen.jsx
+│   ├── services/achievements/ # In-memory achievement system
+│   └── styles/                # Tailwind helpers + themes
+├── sample-questions.csv
+├── firestore.rules
+├── tests/                     # Vitest + Testing Library suites
+├── public/                    # Static assets (logos, duck, etc.)
+└── _redirects, wrangler.jsonc, makefile, etc.
+```
+Routing uses `HashRouter` for static hosting: `/` renders the landing page, `/game` mounts the main experience, and `/spectator/:code` shows TV mode.
+
+---
+
+## 🧪 Scripts & Testing
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Start Vite dev server (hash router at `/#/game/...`) |
@@ -62,121 +148,7 @@ Helpful references:
 | `npm run test` | Run Vitest suite once |
 | `npm run test:watch` | Watch mode for rapid UI/helper tests |
 
----
-
-## ⚙️ Configuration
-
-### Firebase
-Add secrets to `.env.local` (git-ignored) so keys stay out of commits:
-```
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project
-VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
-VITE_FIREBASE_APP_ID=1:123456789012:web:abc123
-VITE_APP_ID=quackking   # Used as Firestore namespace
-```
-`npm run validate` reads these values. If you must inject at runtime (non-Vite hosting), you can still set `window.__firebase_config` / `window.__app_id` in `index.html`, but env vars are preferred to avoid committing secrets.
-
-### Security Rules
-Deploy the shipped `firestore.rules` to prevent score tampering and enforce host-only controls:
-```bash
-firebase deploy --only firestore:rules
-```
-
-### AI Question Generation (Optional)
-Two ways to enable the AI generator button in the lobby:
-1. **Proxy URL** – Set `VITE_AI_PROXY_URL` (or `window.AI_PROXY_URL`) to a backend that returns formatted questions.
-2. **Gemini direct** – Provide `VITE_GEMINI_API_KEY` (or `window.GEMINI_API_KEY`). The app uses the `gemini-2.5-flash` model with structured JSON responses (see `src/helpers/geminiService.js`).
-
-When neither is configured, the UI automatically falls back to manual CSV uploads.
-
----
-
-## 🎮 Gameplay Flow
-
-### Host Controls
-1. **Create game** from the home screen (LandingPage → `/game` route).
-2. **Share invite** – copy the link or tap the native Web Share button (desktop & mobile friendly).
-3. **Load questions**:
-   - Paste CSV (there’s a `sample-questions.csv` in the repo).
-   - Prompt the AI generator with a theme.
-   - Use the in-app Questions Editor for touch-ups.
-4. **Monitor lobby** – see live player list, topic suggestions, and question count.
-5. **Start Game** or **Test Alone** (host-only dry run that resets scores and starts the round loop).
-
-### Players
-1. Enter a display name & 4-letter code.
-2. Wait in the lobby until the host starts.
-3. Answer questions in real time; points are awarded for speed and accuracy.
-4. Follow along as the host advances to results.
-
-### Questions Editor (Host Only)
-`src/components/QuestionsEditor.jsx` offers:
-- Inline editing for prompts, answers, and options
-- Visual highlight for the correct answer
-- Expand/collapse per question to keep the UI compact
-- Delete protection with confirmations
-
----
-
-## 📝 Question Sources
-
-### CSV Format
-```csv
-Question,Correct Answer,Option 1,Option 2,Option 3
-What is the capital of France?,Paris,London,Berlin,Madrid
-Who painted the Mona Lisa?,Leonardo da Vinci,Michelangelo,Raphael,Donatello
-```
-- Use Excel/Sheets or edit by hand.
-- Paste directly into the “Manual CSV Upload” textarea.
-- The upload button shows how many questions will be imported.
-
-### AI Prompts
-Enter topics like “World Capitals”, “90s Cartoons”, or “Food Trivia”. The app requests five multiple-choice questions per prompt and shuffles the options automatically.
-
----
-
-## 🏗️ Project Structure
-```
-trivia-game/
-├── LandingPage.jsx            # Marketing splash page (/# route)
-├── src/
-│   ├── App.jsx                # Router + Firebase wiring
-│   ├── components/
-│   │   └── QuestionsEditor.jsx
-│   ├── screens/
-│   │   ├── HomeScreen.jsx
-│   │   ├── LobbyScreen.jsx
-│   │   ├── HostGameScreen.jsx
-│   │   ├── PlayerGameScreen.jsx
-│   │   └── ResultsScreen.jsx
-│   ├── helpers/               # Firebase paths, AI client, utility functions
-│   └── styles/customThemes/   # Tailwind helper palettes
-├── tests/                     # Vitest + Testing Library suites
-├── index.html / index.css     # Firebase config entry + Tailwind layer
-├── firestore.rules            # Must be deployed
-├── sample-questions.csv
-└── wrangler.jsonc, _redirects, etc.
-```
-Routing uses `HashRouter` for easy static hosting: `/` renders the animated landing page, `/game` mounts the main `TriviaGame` component.
-
----
-
-## 🎨 Styling & Customization
-- Tailwind is configured via `tailwind.config.cjs` with additional palettes in `src/styles/customThemes/`.
-- Update hero/marketing copy in `LandingPage.jsx`.
-- Tweak lobby layouts in `src/screens/LobbyScreen.jsx` (recently optimized for TV-sized displays).
-- Modify gameplay logic or scoring in `src/screens/HostGameScreen.jsx` & `PlayerGameScreen.jsx`.
-- Adjust the Questions Editor look/feel in `src/components/QuestionsEditor.jsx`.
-
----
-
-## 🧪 Testing & QA
-- Run `npm run test` to execute Vitest suites (see `tests/`).
-- `TESTING_MULTIPLAYER.md` explains how to simulate multiple players (incognito windows, LAN devices, etc.).
-- When debugging Firebase issues, `npm run validate` confirms credentials and rule access before you start the UI.
+See `TESTING_MULTIPLAYER.md` for local multi-player tips.
 
 ---
 
@@ -201,9 +173,10 @@ npm run build
 
 ## 🐛 Troubleshooting Cheatsheet
 - **Firebase initialization failed** – ensure `.env.local` has VITE_FIREBASE_* values (or `window.__firebase_config` is set) and `npm run validate` passes.
-- **Missing permissions** – deploy `firestore.rules`, enable Anonymous Auth, and confirm the Firebase project ID matches.
+- **Missing permissions** – deploy `firestore.rules`, enable Anonymous Auth, and confirm the Firebase project ID matches `VITE_FIREBASE_PROJECT_ID`.
 - **AI button disabled** – set `VITE_AI_PROXY_URL` or `VITE_GEMINI_API_KEY`.
-- **Players overwrite each other** – read `TESTING_MULTIPLAYER.md` (each browser profile gets one anonymous user).
+- **Accounts won’t sign in** – enable Email/Password in Firebase if you want non-anonymous logins.
+- **Players overwrite each other** – each browser profile gets one anonymous user; open incognito windows per player (see `TESTING_MULTIPLAYER.md`).
 - **Styling missing** – run `npm install`, confirm `tailwind.config.cjs` plus `postcss.config.cjs` exist, and restart `npm run dev`.
 
 ---
