@@ -4,10 +4,14 @@ import { useGameLogic } from "../hooks/useGameLogic";
 import { useParams } from "react-router-dom";
 import { useFirebase } from "../helpers/useFirebase";
 import QuackKingLogo from "../components/QuackKingLogo.jsx";
+import { useSoundEffects } from "../hooks/useSoundEffects";
 
 export default function SpectatorScreen() {
     const { code } = useParams();
     const { db, auth } = useFirebase();
+    const { playSound, volume, setVolume, isMuted, toggleMute } = useSoundEffects();
+    const [showControls, setShowControls] = useState(false);
+
     useEffect(() => {
         if (typeof document === "undefined") return;
         const previous = document.title;
@@ -44,6 +48,7 @@ export default function SpectatorScreen() {
 
     // 🕒 Timer Logic (Must be at top level)
     const [timeLeft, setTimeLeft] = React.useState(30);
+    const [countdownValue, setCountdownValue] = React.useState(null);
 
     // 🔤 Stable sort for grid (Alphabetical)
     const gridPlayers = useMemo(() => {
@@ -91,6 +96,77 @@ export default function SpectatorScreen() {
         </div>
     );
 
+
+    const SoundControls = () => {
+        const [clickTimeout, setClickTimeout] = React.useState(null);
+
+        const handleButtonClick = (e) => {
+            // Prevent immediate toggle if this might be a double-click
+            if (clickTimeout) {
+                clearTimeout(clickTimeout);
+                setClickTimeout(null);
+                // This is a double-click - mute
+                toggleMute();
+            } else {
+                // Wait to see if another click comes (double-click)
+                const timeout = setTimeout(() => {
+                    setShowControls(!showControls);
+                    setClickTimeout(null);
+                }, 250);
+                setClickTimeout(timeout);
+            }
+        };
+
+        return (
+            <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end">
+                {showControls && (
+                    <div className="mb-2 bg-slate-900/90 backdrop-blur-md rounded-xl p-3 shadow-lg border border-white/10 flex flex-col gap-1 min-w-[180px] animate-fade-in">
+                        <div className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider text-center">Volume</div>
+                        <button
+                            onClick={() => setVolume(0.15)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.15) < 0.05 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                }`}
+                        >
+                            <span>Whisper</span>
+                            <span className="text-xs opacity-60">15%</span>
+                        </button>
+                        <button
+                            onClick={() => setVolume(0.5)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.5) < 0.05 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                }`}
+                        >
+                            <span>Reasonable</span>
+                            <span className="text-xs opacity-60">50%</span>
+                        </button>
+                        <button
+                            onClick={() => setVolume(1.0)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 1.0) < 0.05 ? 'bg-red-600 text-white shadow-lg shadow-red-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                }`}
+                        >
+                            <span>Deafening</span>
+                            <span className="text-xs opacity-60">100%</span>
+                        </button>
+                    </div>
+                )}
+                <button
+                    onClick={handleButtonClick}
+                    className="bg-slate-800/80 backdrop-blur-md hover:bg-slate-700/80 text-white rounded-full p-2 shadow-lg border border-white/10 transition-all"
+                    title="Click for volume, double-click to mute"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        {isMuted ? (
+                            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        ) : (
+                            <>
+                                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                            </>
+                        )}
+                    </svg>
+                </button>
+            </div>
+        );
+    };
+
     React.useEffect(() => {
         if (lobbyState?.status !== "PLAYING" || !lobbyState?.currentQuestionStartTime) return;
 
@@ -113,10 +189,142 @@ export default function SpectatorScreen() {
         revealTime,
     ]);
 
+    // 🎬 Match Start Countdown Timer
+    React.useEffect(() => {
+        if (lobbyState?.status !== "PLAYING" || lobbyState?.currentQuestionIndex !== 0 || lobbyState?.answerRevealed) {
+            setCountdownValue(null);
+            return;
+        }
+
+        let hasReachedZero = false;
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const start = lobbyState.currentQuestionStartTime;
+            const elapsed = now - start;
+            const remaining = FIRST_QUESTION_DELAY_SECONDS * 1000 - elapsed;
+
+            if (remaining > 0) {
+                const seconds = Math.ceil(remaining / 1000);
+                setCountdownValue(seconds);
+            } else if (!hasReachedZero) {
+                hasReachedZero = true;
+                setCountdownValue(0); // "GO!" state
+                setTimeout(() => setCountdownValue(null), 500); // Clear after brief moment
+                clearInterval(interval); // Stop the interval immediately
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [
+        lobbyState?.status,
+        lobbyState?.currentQuestionStartTime,
+        lobbyState?.currentQuestionIndex,
+        lobbyState?.answerRevealed,
+    ]);
+
+    // 🔊 Sound Effects: Match start countdown
+    const [lastCountdown, setLastCountdown] = React.useState(null);
+    React.useEffect(() => {
+        if (countdownValue === null) return;
+
+        if (countdownValue === 3 && lastCountdown !== 3) {
+            playSound('countdown');
+            setLastCountdown(3);
+        } else if (countdownValue === 2 && lastCountdown !== 2) {
+            playSound('countdown');
+            setLastCountdown(2);
+        } else if (countdownValue === 1 && lastCountdown !== 1) {
+            playSound('countdown');
+            setLastCountdown(1);
+        } else if (countdownValue === 0 && lastCountdown !== 0) {
+            playSound('all-answered'); // "GO!" sound (triumphant)
+            setLastCountdown(0);
+        }
+    }, [countdownValue, lastCountdown, playSound]);
+
+    // Reset countdown tracker on question change
+    React.useEffect(() => {
+        setLastCountdown(null);
+    }, [lobbyState?.currentQuestionIndex]);
+
+    // 🔊 Sound Effects: Timer warnings
+    const [lastWarning, setLastWarning] = React.useState(null);
+    React.useEffect(() => {
+        if (lobbyState?.status !== "PLAYING" || lobbyState?.answerRevealed) return;
+
+        const timeInt = Math.ceil(timeLeft);
+
+        if (timeInt === 10 && lastWarning !== 10) {
+            playSound('timer-10s');
+            setLastWarning(10);
+        } else if (timeInt === 5 && lastWarning !== 5) {
+            playSound('timer-5s');
+            setLastWarning(5);
+        } else if (timeInt === 0 && lastWarning !== 0 && timeLeft <= 0.1) {
+            playSound('timer-end');
+            setLastWarning(0);
+        }
+    }, [timeLeft, lobbyState?.status, lobbyState?.answerRevealed, lastWarning, playSound]);
+
+    // Reset warning tracker on new question
+    React.useEffect(() => {
+        setLastWarning(null);
+    }, [lobbyState?.currentQuestionIndex]);
+
+    // 🔊 Sound Effects: Player answers
+    const prevAnsweredCount = React.useRef(0);
+    React.useEffect(() => {
+        if (lobbyState?.status !== "PLAYING" || lobbyState?.answerRevealed) return;
+
+        const currentCount = answeredCount;
+        const totalPlayers = players.length;
+
+        // New player answered
+        if (currentCount > prevAnsweredCount.current) {
+            playSound('player-answer');
+
+            // All players answered
+            if (totalPlayers > 0 && currentCount === totalPlayers) {
+                setTimeout(() => playSound('all-answered'), 200);
+            }
+        }
+
+        prevAnsweredCount.current = currentCount;
+    }, [answeredCount, players.length, lobbyState?.status, lobbyState?.answerRevealed, playSound]);
+
+    // Reset count on new question
+    React.useEffect(() => {
+        prevAnsweredCount.current = 0;
+    }, [lobbyState?.currentQuestionIndex]);
+
+    // 🔊 Sound Effects: Answer reveal
+    const prevRevealed = React.useRef(false);
+    React.useEffect(() => {
+        if (lobbyState?.answerRevealed && !prevRevealed.current) {
+            playSound('reveal');
+            setTimeout(() => playSound('correct'), 400);
+        }
+        prevRevealed.current = lobbyState?.answerRevealed || false;
+    }, [lobbyState?.answerRevealed, playSound]);
+
+    // 🔊 Sound Effects: Results screen
+    const prevStatus = React.useRef('');
+    React.useEffect(() => {
+        if (lobbyState?.status === "RESULTS" && prevStatus.current !== "RESULTS") {
+            playSound('results');
+            // Winner fanfare after a delay
+            if (sortedPlayers.length > 0) {
+                setTimeout(() => playSound('winner'), 1000);
+            }
+        }
+        prevStatus.current = lobbyState?.status || '';
+    }, [lobbyState?.status, sortedPlayers.length, playSound]);
+
     if (!lobbyState) {
         return (
             <div className="relative min-h-screen bg-slate-950 flex items-center justify-center text-white">
                 <LogoBadge />
+                <SoundControls />
                 <div className="text-center animate-pulse">
                     <h1 className="text-4xl font-bold mb-4">Connecting to Game...</h1>
                     <p className="text-xl text-slate-400">Code: {code}</p>
@@ -130,6 +338,7 @@ export default function SpectatorScreen() {
         return (
             <div className="relative min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-white flex flex-col items-center justify-center p-8">
                 <LogoBadge />
+                <SoundControls />
                 <div className="w-full max-w-6xl grid grid-cols-2 gap-12 items-center">
                     <div className="space-y-8 text-center lg:text-left">
                         <div>
@@ -187,7 +396,43 @@ export default function SpectatorScreen() {
 
         return (
             <div className="relative min-h-screen bg-slate-900 text-white flex flex-col p-8">
+                <SoundControls />
                 <LogoBadge />
+
+                {/* Match Start Countdown Overlay */}
+                {countdownValue !== null && countdownValue > 0 && (
+                    <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center z-40 animate-fade-in">
+                        <div className="text-center">
+                            <p className="text-3xl text-purple-400 mb-8 uppercase tracking-widest">
+                                Match Starting In...
+                            </p>
+                            <div
+                                className="text-[20rem] font-black text-white animate-bounce-in"
+                                style={{
+                                    textShadow: '0 0 60px rgba(139, 92, 246, 0.8), 0 0 120px rgba(139, 92, 246, 0.4)',
+                                    animation: 'pulse 0.5s ease-in-out'
+                                }}
+                            >
+                                {countdownValue}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* "GO!" State */}
+                {countdownValue === 0 && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center z-40">
+                        <div
+                            className="text-[20rem] font-black text-white"
+                            style={{
+                                textShadow: '0 0 80px rgba(255, 255, 255, 0.8)',
+                                animation: 'pop-scale 0.5s ease-out'
+                            }}
+                        >
+                            GO!
+                        </div>
+                    </div>
+                )}
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                     <div className="text-2xl font-bold text-purple-400">
@@ -229,10 +474,9 @@ export default function SpectatorScreen() {
                                         animation: isPulsing ? `pressurePulse ${pulseDuration} infinite` : 'none'
                                     }}
                                     className={
-                                        `relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300 ${
-                                            hasAnswered
-                                                ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
-                                                : "bg-slate-800 border-slate-700 shadow-lg"
+                                        `relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300 ${hasAnswered
+                                            ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                                            : "bg-slate-800 border-slate-700 shadow-lg"
                                         }`
                                     }
                                 >
@@ -298,7 +542,18 @@ export default function SpectatorScreen() {
                         50% { transform: scale(0.95); border-color: rgb(239, 68, 68); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
                     }
                 `}</style>
-            </div>
+                <style>{`
+                    @keyframes pop-scale {
+                        0% { transform: scale(0.5); opacity: 0; }
+                        50% { transform: scale(1.2); opacity: 1; }
+                        100% { transform: scale(1); opacity: 1; }
+                    }
+                    @keyframes fade-in {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                `}</style>
+            </div >
         );
     }
 
@@ -306,6 +561,7 @@ export default function SpectatorScreen() {
     if (lobbyState.status === "RESULTS") {
         return (
             <div className="relative min-h-screen bg-gradient-to-b from-slate-900 to-purple-900 text-white p-8 flex flex-col items-center">
+                <SoundControls />
                 <LogoBadge />
                 <h1 className="text-6xl font-black text-yellow-400 mb-12 uppercase tracking-widest drop-shadow-lg">
                     Leaderboard
@@ -342,6 +598,7 @@ export default function SpectatorScreen() {
     // Fallback/Debug View
     return (
         <div className="relative min-h-screen bg-slate-950 text-white p-8 flex flex-col items-center justify-center">
+            <SoundControls />
             <LogoBadge />
             <h1 className="text-2xl font-bold text-red-400 mb-4">Unknown Game Status</h1>
             <p className="mb-4">Status: <span className="font-mono bg-slate-800 px-2 py-1 rounded">{lobbyState.status}</span></p>
