@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { useFirebase } from "../helpers/useFirebase";
 import QuackKingLogo from "../components/QuackKingLogo.jsx";
 import { useSoundEffects } from "../hooks/useSoundEffects";
+import CastControls from "../components/CastControls.jsx";
 
 export default function SpectatorScreen() {
     const { code } = useParams();
@@ -324,6 +325,7 @@ export default function SpectatorScreen() {
         return (
             <div className="relative min-h-screen bg-slate-950 flex items-center justify-center text-white">
                 <LogoBadge />
+                <CastControls code={code} />
                 <SoundControls />
                 <div className="text-center animate-pulse">
                     <h1 className="text-4xl font-bold mb-4">Connecting to Game...</h1>
@@ -338,29 +340,30 @@ export default function SpectatorScreen() {
         return (
             <div className="relative min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-white flex flex-col items-center justify-center p-8">
                 <LogoBadge />
+                <CastControls code={code} />
                 <SoundControls />
-                <div className="w-full max-w-6xl grid grid-cols-2 gap-12 items-center">
-                    <div className="space-y-8 text-center lg:text-left">
+                <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                    <div className="space-y-6 lg:space-y-8 text-center lg:text-left order-2 lg:order-1">
                         <div>
-                            <p className="text-2xl uppercase tracking-[0.5em] text-yellow-400 mb-4">
+                            <p className="text-xl lg:text-2xl uppercase tracking-[0.5em] text-yellow-400 mb-2 lg:mb-4">
                                 Join the Game
                             </p>
-                            <h1 className="text-8xl font-black text-white mb-6 tracking-tight">
+                            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white mb-4 lg:mb-6 tracking-tight break-all">
                                 {code}
                             </h1>
-                            <p className="text-3xl text-purple-200">
-                                Scan to join or go to <span className="text-white font-bold">{joinDisplay}</span>
+                            <p className="text-xl sm:text-2xl lg:text-3xl text-purple-200">
+                                Scan to join or go to <span className="text-white font-bold block sm:inline mt-2 sm:mt-0">{joinDisplay}</span>
                             </p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 inline-block">
-                            <div className="text-4xl font-bold mb-2">{players.length}</div>
-                            <div className="text-xl uppercase tracking-widest text-purple-300">Players Ready</div>
+                        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 lg:p-8 border border-white/20 inline-block">
+                            <div className="text-3xl lg:text-4xl font-bold mb-2">{players.length}</div>
+                            <div className="text-lg lg:text-xl uppercase tracking-widest text-purple-300">Players Ready</div>
                         </div>
                     </div>
 
-                    <div className="flex justify-center">
-                        <div className="bg-white p-6 rounded-3xl shadow-2xl shadow-purple-500/20">
-                            <QRCode value={joinUrl} size={400} />
+                    <div className="flex justify-center order-1 lg:order-2">
+                        <div className="bg-white p-4 lg:p-6 rounded-3xl shadow-2xl shadow-purple-500/20 max-w-[280px] sm:max-w-none">
+                            <QRCode value={joinUrl} size={256} className="w-full h-auto sm:w-[400px] sm:h-[400px]" />
                         </div>
                     </div>
                 </div>
@@ -396,6 +399,7 @@ export default function SpectatorScreen() {
 
         return (
             <div className="relative min-h-screen bg-slate-900 text-white flex flex-col p-8">
+                <CastControls code={code} />
                 <SoundControls />
                 <LogoBadge />
 
@@ -407,7 +411,7 @@ export default function SpectatorScreen() {
                                 Match Starting In...
                             </p>
                             <div
-                                className="text-[20rem] font-black text-white animate-bounce-in"
+                                className="text-[10rem] md:text-[20rem] font-black text-white animate-bounce-in count-text"
                                 style={{
                                     textShadow: '0 0 60px rgba(139, 92, 246, 0.8), 0 0 120px rgba(139, 92, 246, 0.4)',
                                     animation: 'pulse 0.5s ease-in-out'
@@ -423,7 +427,7 @@ export default function SpectatorScreen() {
                 {countdownValue === 0 && (
                     <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center z-40">
                         <div
-                            className="text-[20rem] font-black text-white"
+                            className="text-[10rem] md:text-[20rem] font-black text-white count-text"
                             style={{
                                 textShadow: '0 0 80px rgba(255, 255, 255, 0.8)',
                                 animation: 'pop-scale 0.5s ease-out'
@@ -433,26 +437,31 @@ export default function SpectatorScreen() {
                         </div>
                     </div>
                 )}
+                <style>{`
+                    @media (max-width: 640px) {
+                        .count-text { font-size: 10rem !important; }
+                    }
+                `}</style>
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div className="text-2xl font-bold text-purple-400">
+                <div className="flex justify-between items-center mb-6 lg:mb-8">
+                    <div className="text-lg lg:text-2xl font-bold text-purple-400">
                         Round {lobbyState.currentQuestionIndex + 1} / {lobbyState.questions?.length || 0}
                     </div>
-                    <div className="text-4xl font-black tracking-widest">{code}</div>
-                    <div className={`text-4xl font-black ${timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-white"}`}>
+                    <div className="text-2xl lg:text-4xl font-black tracking-widest">{code}</div>
+                    <div className={`text-2xl lg:text-4xl font-black ${timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-white"}`}>
                         {Math.ceil(timeLeft)}s
                     </div>
                 </div>
 
                 {/* Question */}
-                <div className="mb-12 text-center flex flex-col items-center">
+                <div className="mb-8 lg:mb-12 text-center flex flex-col items-center">
                     {hasTheme && (
-                        <div className="inline-flex items-center gap-2 mb-6 rounded-2xl border border-white/20 bg-white/5 px-6 py-2 text-lg uppercase tracking-[0.25em] text-purple-100/70">
+                        <div className="inline-flex items-center gap-2 mb-4 lg:mb-6 rounded-2xl border border-white/20 bg-white/5 px-4 lg:px-6 py-2 text-sm lg:text-lg uppercase tracking-[0.25em] text-purple-100/70">
                             <span className="text-yellow-200 font-semibold tracking-[0.25em]">Theme</span>
                             <span className="text-white/90 font-semibold normal-case tracking-normal">{currentTheme}</span>
                         </div>
                     )}
-                    <h2 className="text-5xl font-bold leading-tight max-w-6xl mx-auto drop-shadow-2xl">
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight max-w-6xl mx-auto drop-shadow-2xl px-2">
                         {currentQuestion?.question}
                     </h2>
                 </div>
@@ -480,7 +489,7 @@ export default function SpectatorScreen() {
                                         }`
                                     }
                                 >
-                                    <div className={`text-2xl font-bold truncate max-w-full px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
+                                    <div className={`text-lg lg:text-2xl font-bold truncate max-w-full px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
                                         {p.name}
                                     </div>
                                     {hasAnswered && (
@@ -561,9 +570,10 @@ export default function SpectatorScreen() {
     if (lobbyState.status === "RESULTS") {
         return (
             <div className="relative min-h-screen bg-gradient-to-b from-slate-900 to-purple-900 text-white p-8 flex flex-col items-center">
+                <CastControls code={code} />
                 <SoundControls />
                 <LogoBadge />
-                <h1 className="text-6xl font-black text-yellow-400 mb-12 uppercase tracking-widest drop-shadow-lg">
+                <h1 className="text-4xl lg:text-6xl font-black text-yellow-400 mb-8 lg:mb-12 uppercase tracking-widest drop-shadow-lg text-center">
                     Leaderboard
                 </h1>
 
@@ -576,16 +586,16 @@ export default function SpectatorScreen() {
                                 : "bg-white/5 border-white/10"
                                 } transition-all`}
                         >
-                            <div className="flex items-center gap-6">
-                                <div className={`text-4xl font-black w-16 text-center ${index === 0 ? "text-yellow-400" :
+                            <div className="flex items-center gap-3 lg:gap-6">
+                                <div className={`text-2xl lg:text-4xl font-black w-10 lg:w-16 text-center ${index === 0 ? "text-yellow-400" :
                                     index === 1 ? "text-slate-300" :
                                         index === 2 ? "text-amber-600" : "text-slate-500"
                                     }`}>
                                     #{index + 1}
                                 </div>
-                                <div className="text-3xl font-bold">{p.name}</div>
+                                <div className="text-xl lg:text-3xl font-bold truncate max-w-[150px] sm:max-w-xs">{p.name}</div>
                             </div>
-                            <div className="text-4xl font-black text-purple-200">
+                            <div className="text-2xl lg:text-4xl font-black text-purple-200">
                                 {p.score}
                             </div>
                         </div>
@@ -598,6 +608,7 @@ export default function SpectatorScreen() {
     // Fallback/Debug View
     return (
         <div className="relative min-h-screen bg-slate-950 text-white p-8 flex flex-col items-center justify-center">
+            <CastControls code={code} />
             <SoundControls />
             <LogoBadge />
             <h1 className="text-2xl font-bold text-red-400 mb-4">Unknown Game Status</h1>
