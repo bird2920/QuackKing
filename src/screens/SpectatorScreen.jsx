@@ -338,10 +338,24 @@ export default function SpectatorScreen() {
     // 📺 LOBBY VIEW
     if (lobbyState.status === "LOBBY" || lobbyState.status === "UPLOAD") {
         return (
-            <div className="relative min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-white flex flex-col items-center justify-center p-8">
+            <div className={`relative min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-white flex flex-col items-center justify-center p-8 transition-all`}>
                 <LogoBadge />
                 <CastControls code={code} />
                 <SoundControls />
+
+                {/* Portrait Overlay */}
+                <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-8 text-center md:hidden landscape:hidden">
+                    <div className="text-6xl mb-6">📺</div>
+                    <h2 className="text-3xl font-bold text-white mb-4">This is Spectator Mode.</h2>
+                    <p className="text-xl text-slate-400 mb-8 max-w-sm">
+                        It belongs on a big screen, not your tiny phone.
+                    </p>
+                    <div className="bg-slate-900 rounded-xl p-6 border border-white/10 animate-pulse">
+                        <p className="text-purple-300 font-bold uppercase tracking-widest text-sm mb-2">Instructions</p>
+                        <p className="text-white text-lg font-medium">Rotate your phone & Cast it to a TV.</p>
+                    </div>
+                </div>
+
                 <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                     <div className="space-y-6 lg:space-y-8 text-center lg:text-left order-2 lg:order-1">
                         <div>
@@ -402,6 +416,18 @@ export default function SpectatorScreen() {
                 <CastControls code={code} />
                 <SoundControls />
                 <LogoBadge />
+
+                {/* Portrait Overlay */}
+                <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-8 text-center md:hidden landscape:hidden">
+                    <div className="text-6xl mb-6">🛑</div>
+                    <h2 className="text-3xl font-bold text-white mb-4">Rotate Your Phone</h2>
+                    <p className="text-xl text-slate-400 mb-8 max-w-sm">
+                        You can't experience the glory of Spectator Mode in portrait.
+                    </p>
+                    <div className="bg-slate-800 rounded-xl p-6 border border-white/10 animate-bounce">
+                        <p className="text-white text-lg font-medium">Turn it sideways & Cast to TV 📺</p>
+                    </div>
+                </div>
 
                 {/* Match Start Countdown Overlay */}
                 {countdownValue !== null && countdownValue > 0 && (
@@ -483,13 +509,13 @@ export default function SpectatorScreen() {
                                         animation: isPulsing ? `pressurePulse ${pulseDuration} infinite` : 'none'
                                     }}
                                     className={
-                                        `relative w-48 h-32 rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300 ${hasAnswered
+                                        `relative w-32 h-20 sm:w-48 sm:h-32 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border-4 transition-all duration-300 ${hasAnswered
                                             ? "bg-green-500 border-green-400 scale-105 shadow-[0_0_20px_rgba(34,197,94,0.6)]"
                                             : "bg-slate-800 border-slate-700 shadow-lg"
                                         }`
                                     }
                                 >
-                                    <div className={`text-lg lg:text-2xl font-bold truncate max-w-full px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
+                                    <div className={`text-sm sm:text-lg lg:text-2xl font-bold truncate max-w-full px-2 sm:px-4 ${hasAnswered ? "text-white" : "text-slate-300"}`}>
                                         {p.name}
                                     </div>
                                     {hasAnswered && (
@@ -505,16 +531,16 @@ export default function SpectatorScreen() {
                     </div>
 
                     {/* Stats Panel */}
-                    <div className="mt-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`mt-6 sm:mt-10 w-full max-w-5xl grid grid-cols-1 ${lobbyState.answerRevealed ? 'md:grid-cols-2' : ''} gap-4 sm:gap-6`}>
                         {/* Fastest Answers List */}
-                        <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-4">
-                            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                        <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-3 sm:p-4">
+                            <h3 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2">
                                 <span role="img" aria-label="lightning">⚡</span> Fastest Answers
                             </h3>
                             {fastestPlayers && fastestPlayers.length > 0 ? (
                                 <ol className="space-y-1">
                                     {fastestPlayers.map((p, idx) => (
-                                        <li key={p.id} className="flex justify-between text-lg">
+                                        <li key={p.id} className="flex justify-between text-base sm:text-lg">
                                             <span className="font-medium">{idx + 1}. {p.name}</span>
                                             <span className="text-slate-400">{(p.answerTime / 1000).toFixed(1)}s</span>
                                         </li>
@@ -526,12 +552,12 @@ export default function SpectatorScreen() {
                         </div>
                         {/* Answer Distribution */}
                         {lobbyState.answerRevealed && (
-                            <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-4">
-                                <h3 className="text-xl font-bold mb-2">Answer Distribution</h3>
+                            <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-3 sm:p-4">
+                                <h3 className="text-lg sm:text-xl font-bold mb-2">Answer Distribution</h3>
                                 {Object.keys(answerDistribution).length > 0 ? (
                                     <ul className="space-y-1">
                                         {Object.entries(answerDistribution).map(([key, count]) => (
-                                            <li key={key} className="flex justify-between text-lg font-semibold">
+                                            <li key={key} className="flex justify-between text-base sm:text-lg font-semibold">
                                                 <span>{key}</span>
                                                 <span>{count}</span>
                                             </li>
