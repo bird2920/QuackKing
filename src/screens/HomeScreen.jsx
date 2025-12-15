@@ -20,9 +20,11 @@ export default function HomeScreen({
   resumeScreenName,
   onResumeGame,
   onDismissResume,
+  isLoading,
 }) {
   const [codeDigits, setCodeDigits] = useState(() => toDigitArray(sanitizeCode(prefilledCode || "")));
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [pendingFocusIndex, setPendingFocusIndex] = useState(null);
   const [logoFailed, setLogoFailed] = useState(false);
   const nameInputRef = useRef(null);
@@ -48,16 +50,21 @@ export default function HomeScreen({
   }, [prefilledCode]);
 
   const handleJoin = () => {
-    if (!screenName.trim()) return setError("Please enter your name.");
-    if (codeDigits.some((digit) => !digit)) return setError("Enter a valid 4-letter game code.");
-    setError("");
+    if (!screenName.trim()) return setLocalError("Please enter your name.");
+    if (codeDigits.some((digit) => !digit)) return setLocalError("Enter a valid 4-letter game code.");
+    setLocalError("");
     onJoin(codeValue);
   };
 
-  const handleCreate = () => {
-    if (!screenName.trim()) return setError("Please enter your name.");
-    setError("");
-    onCreate();
+  const handleCreate = async () => {
+    if (!screenName.trim()) return setLocalError("Please enter your name.");
+    setLocalError("");
+    setIsCreating(true);
+    try {
+      await onCreate();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const focusInput = (index, immediate = false) => {
@@ -196,7 +203,7 @@ export default function HomeScreen({
                 Resume Game {resumeGameCode}
               </button>
               <div className="grid sm:grid-cols-2 gap-2">
-              <button
+                <button
                   type="button"
                   onClick={handleJoin}
                   className="rounded-2xl border border-slate-900/10 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-md transition hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
@@ -241,9 +248,9 @@ export default function HomeScreen({
           </div>
 
           <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] border border-white/10 space-y-6">
-            {error && (
+            {localError && (
               <p className="text-rose-200 text-center font-semibold text-sm bg-rose-500/20 border border-rose-300/40 rounded-xl px-4 py-2">
-                {error}
+                {localError}
               </p>
             )}
 
@@ -282,11 +289,10 @@ export default function HomeScreen({
                         e.target.select();
                       }}
                       ref={(el) => (codeInputRefs.current[index] = el)}
-                      className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-black uppercase rounded-2xl border transition focus:outline-none focus:ring-2 ${
-                        isPrefilled
-                          ? "bg-green-100/70 border-green-300 text-green-900"
-                          : "bg-slate-900/60 border-white/10 text-white focus:ring-amber-200"
-                      }`}
+                      className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-black uppercase rounded-2xl border transition focus:outline-none focus:ring-2 ${isPrefilled
+                        ? "bg-green-100/70 border-green-300 text-green-900"
+                        : "bg-slate-900/60 border-white/10 text-white focus:ring-amber-200"
+                        }`}
                       aria-label={`Game code character ${index + 1}`}
                     />
                   ))}
@@ -304,10 +310,13 @@ export default function HomeScreen({
               </button>
               <button
                 onClick={handleCreate}
-                disabled={isCreateDisabled}
-                className="p-3.5 w-full rounded-2xl bg-gradient-to-r from-yellow-300 to-orange-400 text-slate-950 font-black text-lg shadow-xl hover:scale-[1.01] transition disabled:opacity-60 disabled:hover:scale-100"
+                disabled={isCreateDisabled || isCreating || isLoading}
+                className="p-3.5 w-full rounded-2xl bg-gradient-to-r from-yellow-300 to-orange-400 text-slate-950 font-black text-lg shadow-xl hover:scale-[1.01] transition disabled:opacity-60 disabled:hover:scale-100 flex items-center justify-center gap-2"
               >
-                Create Game
+                {(isCreating || isLoading) && (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                )}
+                {isCreating || isLoading ? "Creating..." : "Create Game"}
               </button>
             </div>
 

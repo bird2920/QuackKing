@@ -120,6 +120,7 @@ function TriviaGame({ prefillFromRoute }) {
         resumeScreenName={pendingResume?.screenName}
         onResumeGame={resumeCachedSession}
         onDismissResume={dismissPendingResume}
+        isLoading={isLoading}
       />
     );
   } else if (lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD") {
