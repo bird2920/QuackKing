@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth";
 // 🔧 Helper Imports
 import { useFirebase } from "./helpers/useFirebase";
 import { useGameLogic } from "./hooks/useGameLogic";
+import { useHackerNewsNotice } from "./hooks/useHackerNewsNotice";
 
 // 🎨 Pages
 import LandingPage from "../LandingPage";
@@ -16,7 +17,9 @@ import HostGameScreen from "./screens/HostGameScreen";
 import PlayerGameScreen from "./screens/PlayerGameScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import SpectatorScreen from "./screens/SpectatorScreen";
+import AboutPage from "./screens/AboutPage";
 import AccountModal from "./components/AccountModal";
+import HackerNewsModal from "./components/HackerNewsModal";
 import { achievementBus, getAchievementService } from "./services/achievements";
 
 getAchievementService();
@@ -61,6 +64,13 @@ function TriviaGame({ prefillFromRoute }) {
     resumeCachedSession,
     dismissPendingResume,
   } = useGameLogic(db, auth, userId, screenName, "", prefilledCode);
+
+  const isOnHomeOrLobby =
+    mode === "HOME" || lobbyState?.status === "LOBBY" || lobbyState?.status === "UPLOAD";
+
+  const { shouldShow: shouldShowHNModal, dismiss: dismissHNModal } = useHackerNewsNotice({
+    canShow: isOnHomeOrLobby && !isLoading,
+  });
 
   const randomLoadingMessage = useMemo(
     () =>
@@ -190,6 +200,7 @@ function TriviaGame({ prefillFromRoute }) {
         onSuccess={handleAuthSuccess}
         onSwitchMode={handleSwitchAuthMode}
       />
+      <HackerNewsModal isOpen={shouldShowHNModal && isOnHomeOrLobby} onClose={dismissHNModal} />
     </>
   );
 }
@@ -203,6 +214,7 @@ export default function App() {
         <Route path="/game" element={<TriviaGame />} />
         <Route path="/game/:code" element={<TriviaGame prefillFromRoute={true} />} />
         <Route path="/spectator/:code" element={<SpectatorScreen />} />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </HashRouter>
   );

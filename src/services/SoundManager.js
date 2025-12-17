@@ -10,7 +10,7 @@ class SoundManager {
         this.sounds = new Map();
         this.audioContext = null;
         this.masterGain = null;
-        this.isMuted = false;
+        this.isMuted = true; // Start muted by default
         this.volume = 0.5; // Default 50%
         this.initialized = false;
 
@@ -53,7 +53,7 @@ class SoundManager {
             if (settings) {
                 const parsed = JSON.parse(settings);
                 this.volume = parsed.volume ?? 0.5;
-                this.isMuted = parsed.isMuted ?? false;
+                this.isMuted = parsed.isMuted ?? true;
             }
         } catch (err) {
             console.warn('Failed to load sound settings:', err.message);
