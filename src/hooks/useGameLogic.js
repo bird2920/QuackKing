@@ -208,6 +208,7 @@ export function useGameLogic(
             await setDoc(gameDocRef, {
                 gameCode: newCode,
                 hostUserId: userId,
+                hostName: screenName.trim(),
                 status: "LOBBY",
                 questions: [],
                 currentTheme: "",

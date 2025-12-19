@@ -141,6 +141,7 @@ export default function LobbyScreen({
   }, [aiEnabled, aiStatus.reason]);
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
+  const hostName = lobbyState?.hostName?.trim() || "";
   const hostThemeSuggestions = useMemo(
     () => sliceSuggestions(CURATED_THEME_SUGGESTIONS, hostSuggestionIndex, 5),
     [hostSuggestionIndex]
@@ -483,6 +484,9 @@ export default function LobbyScreen({
       <div className="w-full max-w-6xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Game Lobby</p>
+          {hostName && (
+            <p className="text-sm text-purple-100/70">Hosted by {hostName}</p>
+          )}
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <h2 className="text-4xl md:text-5xl font-extrabold">
               Code: <span className="text-yellow-300">{gameCode}</span>
@@ -1007,8 +1011,10 @@ export default function LobbyScreen({
                     </div>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 text-sm text-purple-100/80">
-                  Host is preparing questions. Hang tight, share suggestions, or hype up the lobby!
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 text-sm text-purple-100/80 space-y-2">
+                  {hostName && (
+                    <p>Your host <span className="text-purple-100/90 normal-case font-semibold tracking-normal">{hostName}</span> is preparing questions. Hang tight, share suggestions, or hype up the lobby!</p>
+                  )}
                 </div>
               </div>
             )}
