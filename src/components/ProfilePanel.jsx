@@ -379,6 +379,8 @@ function GameDetailsSheet({ game, onClose }) {
     game.answered && game.answered > 0
       ? `${Math.round(((game.correct || 0) / (game.answered || 1)) * 100)}%`
       : "—";
+  const playerName = game.playerName || null;
+  const theme = game.theme || null;
 
   const handleTouchStart = (e) => {
     setTouchStartY(e.touches?.[0]?.clientY ?? null);
@@ -450,6 +452,18 @@ function GameDetailsSheet({ game, onClose }) {
                 {game.placement ? `#${game.placement}` : "—"}
               </p>
             </div>
+            {playerName && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Player</p>
+                <p className="text-lg font-semibold text-white">{playerName}</p>
+              </div>
+            )}
+            {theme && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Theme</p>
+                <p className="text-base font-semibold text-white">{theme}</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-purple-100/80">
@@ -459,7 +473,6 @@ function GameDetailsSheet({ game, onClose }) {
         </div>
       </div>
 
-      <GameDetailsSheet game={selectedGame} onClose={() => setSelectedGame(null)} />
     </div>
   );
 }
@@ -886,6 +899,7 @@ export default function ProfilePanel({
             </div>
           )}
         </div>
+        <GameDetailsSheet game={selectedGame} onClose={() => setSelectedGame(null)} />
       </div>
     </div>
   );

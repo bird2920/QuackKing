@@ -197,6 +197,44 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
     }
   }, [db, gameCode, players, lobbyState]);
 
+  // 🛑 Stop Game and return to lobby (keep players)
+  const handleReturnToLobby = useCallback(async () => {
+    if (!db || !gameCode) return;
+    const confirmed = window.confirm(
+      "Stop the current game and return to the lobby? Scores and answers will reset."
+    );
+    if (!confirmed) return;
+
+    try {
+      const playersColRef = getPlayersCollectionPath(db, gameCode);
+      const playerDocs = await getDocs(playersColRef);
+      if (!playerDocs.empty) {
+        const batch = writeBatch(db);
+        playerDocs.docs.forEach((docSnap) =>
+          batch.update(docSnap.ref, {
+            score: 0,
+            lastAnswer: null,
+            answerTimestamp: null,
+            correctCount: 0,
+            answeredCount: 0,
+          })
+        );
+        await batch.commit();
+      }
+
+      const gameDocRef = getGameDocPath(db, gameCode);
+      await updateDoc(gameDocRef, {
+        status: "LOBBY",
+        currentQuestionIndex: 0,
+        currentQuestionStartTime: null,
+        answerRevealed: false,
+        lastHostActivity: Date.now(),
+      });
+    } catch (err) {
+      console.error("❌ Error returning to lobby:", err);
+    }
+  }, [db, gameCode]);
+
   // 🤖 Auto reveal when everyone answers
   useEffect(() => {
     if (!autoHostEnabled || revealed) return;
@@ -394,6 +432,13 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
             </button>
           )}
         </div>
+
+        <button
+          onClick={handleReturnToLobby}
+          className="w-full p-3 bg-gray-800 border border-red-500/60 text-red-200 font-bold rounded-xl hover:bg-red-500/10 transition shadow-inner"
+        >
+          Stop Game & Return to Lobby
+        </button>
 
         {autoHostEnabled && revealed && nextQuestionCountdown !== null && (
           <div className="text-center text-sm text-gray-300">

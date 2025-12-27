@@ -10,6 +10,7 @@ import QuackKingLogo from "../components/QuackKingLogo.jsx";
 export default function ResultsScreen({
   db,
   gameCode,
+  lobbyState,
   players,
   isHost,
   userId,
@@ -121,6 +122,8 @@ export default function ResultsScreen({
         playerRecord: record,
         placement: placement ?? placementRef.current ?? null,
         gameCode,
+        playerName: record?.name ?? null,
+        theme: lobbyState?.theme ?? null,
       });
       setSaveStatus("success");
       setSaveMessage("Saved! Your stats are now tracked for future games.");
@@ -129,7 +132,7 @@ export default function ResultsScreen({
       setSaveStatus("error");
       setSaveMessage("Could not save stats. Please try again.");
     }
-  }, [db, gameCode, placement, playerRecord, userId]);
+  }, [db, gameCode, lobbyState?.theme, placement, playerRecord, userId]);
 
   const handleSaveClick = () => {
     if (!latestPlayerRecord) {

@@ -12,6 +12,8 @@ export async function persistGameStats({
   playerRecord,
   placement,
   gameCode,
+  playerName,
+  theme,
 }) {
   if (!db || !userId || !playerRecord) return;
 
@@ -39,6 +41,8 @@ export async function persistGameStats({
 
   const newGameEntry = {
     gameCode: gameCode || null,
+    playerName: playerName || playerRecord?.name || null,
+    theme: theme || null,
     score,
     answered,
     correct,

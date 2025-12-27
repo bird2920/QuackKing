@@ -178,6 +178,7 @@ function TriviaGame({ prefillFromRoute }) {
       <ResultsScreen
         db={db}
         gameCode={gameCode}
+        lobbyState={lobbyState}
         players={players}
         isHost={isHost}
         userId={userId}
