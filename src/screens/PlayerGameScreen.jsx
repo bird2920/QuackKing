@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getPlayerDocPath } from "../helpers/firebasePaths";
 import { updateDoc } from "firebase/firestore";
 import { achievementBus } from "../services/achievements";
@@ -16,6 +16,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   const sortedPlayers = [...activePlayers].sort((a, b) => b.score - a.score);
   const revealTime = lobbyState?.timerSettings?.revealTime ?? 30;
   const FIRST_QUESTION_DELAY_SECONDS = 3;
+  const emittedAnswerRef = useRef(null);
 
   // 🧹 Reset local state when question changes
   useEffect(() => {
@@ -23,6 +24,10 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
       setSelectedAnswer(null);
     }
   }, [lobbyState?.currentQuestionIndex, player]);
+
+  useEffect(() => {
+    emittedAnswerRef.current = null;
+  }, [lobbyState?.currentQuestionIndex]);
 
   // 🎯 Scroll bounce effect when reaching bottom without selection
   useEffect(() => {
@@ -93,33 +98,23 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
   // 📝 Submit answer
   const handleAnswerSubmit = useCallback(
     async (answer) => {
-      if (!db || !gameCode || !player || player.lastAnswer) return;
+      if (!db || !gameCode || !player) return;
+      if (lobbyState?.answerRevealed || startCountdown > 0) return;
+      if (answer === player.lastAnswer) return;
 
       const playerDocRef = getPlayerDocPath(db, gameCode, userId);
       const answerTimestamp = Date.now();
-      const answerTimeMs = questionStartTime
-        ? Math.max(answerTimestamp - questionStartTime, 0)
-        : 0;
       try {
         await updateDoc(playerDocRef, {
           lastAnswer: answer,
           answerTimestamp,
         });
         setSelectedAnswer(answer);
-        achievementBus.emit({
-          type: "QUESTION_ANSWERED",
-          data: {
-            userId,
-            gameId: gameCode,
-            correct: answer === currentQuestion.correctAnswer,
-            answerTimeMs,
-          },
-        });
       } catch (e) {
         console.error("❌ Error submitting answer:", e);
       }
     },
-    [db, gameCode, userId, player, questionStartTime, currentQuestion]
+    [db, gameCode, userId, player, lobbyState?.answerRevealed, startCountdown]
   );
 
   if (!currentQuestion || !player) return null;
@@ -137,6 +132,34 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
     "Stealth Mode";
   const currentTheme = typeof rawTheme === "string" ? rawTheme.trim() : "";
   const hasTheme = currentTheme.length > 0;
+
+  useEffect(() => {
+    if (!answerRevealed || !player?.lastAnswer || !questionStartTime) return;
+    const questionIndex = lobbyState?.currentQuestionIndex ?? 0;
+    if (emittedAnswerRef.current === questionIndex) return;
+    const answerTimestamp =
+      typeof player.answerTimestamp === "number" ? player.answerTimestamp : Date.now();
+    const answerTimeMs = Math.max(answerTimestamp - questionStartTime, 0);
+    achievementBus.emit({
+      type: "QUESTION_ANSWERED",
+      data: {
+        userId,
+        gameId: gameCode,
+        correct: player.lastAnswer === currentQuestion.correctAnswer,
+        answerTimeMs,
+      },
+    });
+    emittedAnswerRef.current = questionIndex;
+  }, [
+    answerRevealed,
+    player?.lastAnswer,
+    player?.answerTimestamp,
+    questionStartTime,
+    lobbyState?.currentQuestionIndex,
+    currentQuestion?.correctAnswer,
+    gameCode,
+    userId,
+  ]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-6 sm:py-10">
@@ -194,7 +217,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
             {currentQuestion.options.map((option, i) => {
               const isSelected = selectedAnswer === option;
-              const isLocked = !!player.lastAnswer || startCountdown > 0;
+              const isLocked = answerRevealed || startCountdown > 0;
               const isCorrectAnswer = option === currentQuestion.correctAnswer;
 
               let optionClasses = "border border-white/15 bg-white/10 text-white";
@@ -232,7 +255,7 @@ export default function PlayerGameScreen({ db, gameCode, lobbyState, players, cu
         </div>
 
           {!answerRevealed && player.lastAnswer && (
-            <span className="text-xs sm:text-sm text-amber-200">✅ Answer locked in. Waiting for reveal...</span>
+            <span className="text-xs sm:text-sm text-amber-200">✅ Answer saved. You can still change it before reveal.</span>
           )}
 
         {answerRevealed && (

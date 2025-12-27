@@ -1004,6 +1004,8 @@ export default function LobbyScreen({
                     type="text"
                     value={topicInput}
                     onChange={(e) => setTopicInput(e.target.value.slice(0, 40))}
+                    name="themeSuggestion"
+                    autoComplete="off"
                     placeholder="e.g., World Capitals, 90s Throwbacks..."
                     className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/60 focus:outline-none focus:ring-2 focus:ring-yellow-300/70"
                     disabled={topicStatus === "saving"}
