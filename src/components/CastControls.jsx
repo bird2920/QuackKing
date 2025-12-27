@@ -13,6 +13,7 @@ export default function CastControls({ code }) {
     const [copied, setCopied] = useState(false);
     const [airPlayAvailable, setAirPlayAvailable] = useState(false);
     const [showAirPlayHelp, setShowAirPlayHelp] = useState(false);
+    const [showCastHelp, setShowCastHelp] = useState(false);
 
     useEffect(() => {
         // Check for Native Share API
@@ -26,55 +27,17 @@ export default function CastControls({ code }) {
             setAirPlayAvailable(true);
         }
 
-        // Initialize Google Cast API
-        // Initialize Google Cast API
-        const initCast = () => {
-            try {
-                const instance = cast.framework.CastContext.getInstance();
-                instance.setOptions({
-                    receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-                    autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-                });
-                setCastAvailable(true);
-            } catch (e) {
-                // It might already be initialized from a previous mount or page load
-                console.warn("Cast init warning:", e);
-                setCastAvailable(true);
-            }
-        };
-
-        window['__onGCastApiAvailable'] = (isAvailable) => {
-            if (isAvailable) {
-                initCast();
-            }
-        };
-
-        // If script loaded before this component mounted
-        if (window.cast && window.cast.framework) {
-            initCast();
+        const ua = navigator.userAgent || "";
+        const isChromium = /Chrome|Chromium/.test(ua) && !/Edg|OPR/.test(ua);
+        const isDesktop = !/Android|iPhone|iPad|iPod/.test(ua);
+        if (isChromium && isDesktop) {
+            setCastAvailable(true);
         }
-
     }, []);
 
     const handleCast = async () => {
-        if (castAvailable && window.cast && window.cast.framework) {
-            try {
-                const context = cast.framework.CastContext.getInstance();
-                if (context) {
-                    await context.requestSession();
-                    console.log("Cast session started");
-                    setShowMenu(false);
-                } else {
-                    console.error("CastContext instance not available");
-                }
-            } catch (e) {
-                if (e !== "cancel") {
-                    console.error("Cast error", e);
-                }
-            }
-        } else {
-            console.warn("Cast API not available");
-        }
+        setShowCastHelp(true);
+        setShowMenu(false);
     };
 
     const handleShare = async () => {
@@ -137,7 +100,7 @@ export default function CastControls({ code }) {
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors w-full text-left"
                             >
                                 <TvIcon className="h-4 w-4" />
-                                <span>Cast Screen</span>
+                                <span>Cast Tab (Chrome)</span>
                             </button>
                         )}
 
@@ -208,6 +171,43 @@ export default function CastControls({ code }) {
 
                         <button
                             onClick={() => setShowAirPlayHelp(false)}
+                            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors border border-white/5"
+                        >
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Cast Help Modal */}
+            {showCastHelp && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowCastHelp(false)}>
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-start">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <TvIcon className="h-6 w-6" />
+                                Cast From Chrome
+                            </h3>
+                            <button onClick={() => setShowCastHelp(false)} className="text-slate-400 hover:text-white">
+                                <XMarkIcon className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 text-slate-300">
+                            <p>Use Chrome's built-in casting to mirror this tab:</p>
+                            <ol className="list-decimal pl-5 space-y-2 marker:text-purple-400">
+                                <li>Open the <strong>Chrome menu</strong> (⋮) and choose <strong>Cast…</strong></li>
+                                <li>Click <strong>Sources</strong> and select <strong>Cast tab</strong></li>
+                                <li>Pick your TV to start mirroring</li>
+                            </ol>
+                            <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-3 text-sm text-purple-200 flex items-start gap-2">
+                                <span className="text-lg">💡</span>
+                                <p>If you see a black screen with a cast icon, stop casting and use <strong>Cast tab</strong> instead of "Cast via app".</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setShowCastHelp(false)}
                             className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors border border-white/5"
                         >
                             Got it

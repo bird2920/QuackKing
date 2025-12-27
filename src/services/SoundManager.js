@@ -13,6 +13,10 @@ class SoundManager {
         this.isMuted = true; // Start muted by default
         this.volume = 0.5; // Default 50%
         this.initialized = false;
+        this.soundFileBaseUrl = '/sounds';
+        this.soundFileExtensions = ['mp3', 'wav', 'ogg'];
+        this.activeAudio = new Set();
+        this.disabledSounds = new Set(['timer-5s', 'correct', 'reveal']);
 
         // Load settings from localStorage
         this.loadSettings();
@@ -125,10 +129,51 @@ class SoundManager {
     }
 
     /**
+     * Attempt to play a sound file from /public/sounds
+     */
+    async playFile(soundKey) {
+        const baseUrl = `${this.soundFileBaseUrl}/${soundKey}`;
+
+        for (const ext of this.soundFileExtensions) {
+            const url = `${baseUrl}.${ext}`;
+            const audio = new Audio(url);
+            audio.preload = 'auto';
+            audio.volume = this.isMuted ? 0 : this.volume;
+
+            this.activeAudio.add(audio);
+            const cleanup = () => {
+                this.activeAudio.delete(audio);
+                audio.removeEventListener('ended', cleanup);
+                audio.removeEventListener('error', cleanup);
+            };
+            audio.addEventListener('ended', cleanup);
+            audio.addEventListener('error', cleanup);
+
+            try {
+                await audio.play();
+                return true;
+            } catch (err) {
+                cleanup();
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Play a predefined sound effect
      */
     async play(soundKey, options = {}) {
         try {
+            if (this.disabledSounds.has(soundKey)) {
+                return;
+            }
+
+            const filePlayed = await this.playFile(soundKey);
+            if (filePlayed) {
+                return;
+            }
+
             // Initialize on first play (requires user interaction)
             if (!this.initialized) {
                 await this.initialize();

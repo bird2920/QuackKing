@@ -122,6 +122,7 @@ export default function LobbyScreen({
   const [showEditor, setShowEditor] = useState(true);
   const [questionTab, setQuestionTab] = useState("ai");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSeedingMocks, setIsSeedingMocks] = useState(false);
   // Ref for auto-scrolling/focusing the QuestionsEditor after questions load
   const editorRef = useRef(null);
   const copyTimeoutRef = useRef(null);
@@ -142,6 +143,7 @@ export default function LobbyScreen({
   const playerRecord = players.find((p) => p.id === userId);
   const playerSuggestion = playerRecord?.topicSuggestion || "";
   const hostName = lobbyState?.hostName?.trim() || "";
+  const showDevTools = Boolean(import.meta?.env?.DEV);
   const hostThemeSuggestions = useMemo(
     () => sliceSuggestions(CURATED_THEME_SUGGESTIONS, hostSuggestionIndex, 5),
     [hostSuggestionIndex]
@@ -413,6 +415,37 @@ export default function LobbyScreen({
       console.error("Failed to copy code:", err);
     }
   }, [gameCode]);
+
+  const handleSeedMockPlayers = useCallback(async () => {
+    if (!db || !gameCode || !isHost) return;
+    const existingIds = new Set(players.map((player) => player.id));
+    setIsSeedingMocks(true);
+    try {
+      const batch = writeBatch(db);
+      let added = 0;
+      for (let i = 1; i <= 25; i += 1) {
+        const id = `mock-${String(i).padStart(2, "0")}`;
+        if (existingIds.has(id)) continue;
+        const playerDocRef = getPlayerDocPath(db, gameCode, id);
+        batch.set(playerDocRef, {
+          name: `Mock Player ${String(i).padStart(2, "0")}`,
+          score: 0,
+          isHost: false,
+          lastAnswer: null,
+          timestamp: Date.now(),
+        });
+        added += 1;
+      }
+      if (added > 0) {
+        await batch.commit();
+      }
+    } catch (e) {
+      console.error("❌ Error seeding mock players:", e);
+      setError("Failed to seed mock players.");
+    } finally {
+      setIsSeedingMocks(false);
+    }
+  }, [db, gameCode, isHost, players]);
 
   // 💡 Player topic suggestion
   const handleSubmitSuggestion = useCallback(async () => {
@@ -1023,7 +1056,19 @@ export default function LobbyScreen({
           <div className="rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-white/10">
               <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Squad</p>
-              <h3 className="text-2xl font-bold">Players ({players.length})</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-2xl font-bold">Players ({players.length})</h3>
+                {showDevTools && isHost && (
+                  <button
+                    type="button"
+                    onClick={handleSeedMockPlayers}
+                    disabled={isSeedingMocks}
+                    className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-amber-100/80 transition hover:bg-white/10 disabled:opacity-50"
+                  >
+                    {isSeedingMocks ? "Seeding..." : "Seed 25"}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-3">
               {players.map((p) => {
