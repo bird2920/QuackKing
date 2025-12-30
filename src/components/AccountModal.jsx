@@ -110,22 +110,22 @@ export default function AccountModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-10 backdrop-blur-xl">
       <div className="absolute inset-0 opacity-70 mix-blend-screen pointer-events-none">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.22),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(244,114,182,0.16),transparent_26%)] blur-3xl" />
+        <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.15),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.08),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(124,58,237,0.08),transparent_26%)] blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 via-purple-900/70 to-indigo-900/70 p-8 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] text-white">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900/90 to-indigo-950/90 p-8 shadow-[0_25px_120px_-35px_rgba(99,102,241,0.4)] text-white">
         <div className="absolute -left-10 -top-12 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-12 -right-10 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-12 -right-10 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl" aria-hidden />
 
         <div className="relative flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.32em] text-purple-100/80 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.32em] text-slate-300 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
               {isSignup ? "Create account" : "Welcome back"}
             </div>
             <div className="flex items-center gap-2">
               <QuackKingLogo className="text-2xl font-black tracking-tight" />
-              <span className="text-sm text-purple-100/70">Secure your stats & history</span>
+              <span className="text-sm text-slate-400">Secure your stats & history</span>
             </div>
             <h2 className="text-3xl font-black tracking-tight text-white">
               {isSignup ? "Save your wins" : "Sign in to keep playing"}
@@ -148,19 +148,19 @@ export default function AccountModal({
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-purple-100/90">Email</label>
+            <label className="text-sm font-semibold text-slate-300">Email</label>
             <input
               type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
-              className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-purple-100/50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-60"
+              className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-60"
               placeholder="you@quackking.gg"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-purple-100/90">Password</label>
+            <label className="text-sm font-semibold text-slate-300">Password</label>
             <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
               <input
                 type="password"
@@ -168,7 +168,7 @@ export default function AccountModal({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-white placeholder:text-purple-100/50 focus:border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-200/60 disabled:opacity-60"
+                className="w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-white placeholder:text-slate-500 focus:border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-200/60 disabled:opacity-60"
                 placeholder={isSignup ? "Minimum 6 characters" : "Enter your password"}
               />
               {!isSignup && (
@@ -189,11 +189,10 @@ export default function AccountModal({
 
           {resetMessage && (
             <div
-              className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                resetStatus === "error"
+              className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${resetStatus === "error"
                   ? "border-rose-300/50 bg-rose-500/15 text-rose-100"
                   : "border-emerald-200/60 bg-emerald-500/15 text-emerald-50"
-              }`}
+                }`}
             >
               <span className="text-lg">{resetStatus === "error" ? "⚠️" : "✅"}</span>
               <div className="space-y-1">
@@ -216,7 +215,7 @@ export default function AccountModal({
           </button>
         </form>
 
-        <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-purple-100/80">
+        <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
           <div>
             {isSignup ? "Already have an account?" : "Need an account?"}{" "}
             <button

@@ -125,7 +125,7 @@ export default function SpectatorScreen() {
                         <div className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider text-center">Volume</div>
                         <button
                             onClick={() => setVolume(0.15)}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.15) < 0.05 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.15) < 0.05 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }`}
                         >
                             <span>Whisper</span>
@@ -133,7 +133,7 @@ export default function SpectatorScreen() {
                         </button>
                         <button
                             onClick={() => setVolume(0.5)}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.5) < 0.05 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex justify-between items-center ${Math.abs(volume - 0.5) < 0.05 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }`}
                         >
                             <span>Reasonable</span>
@@ -338,7 +338,7 @@ export default function SpectatorScreen() {
     // 📺 LOBBY VIEW
     if (lobbyState.status === "LOBBY" || lobbyState.status === "UPLOAD") {
         return (
-            <div className={`relative min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-white flex flex-col items-center justify-center p-8 transition-all`}>
+            <div className={`relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white flex flex-col items-center justify-center p-8 transition-all`}>
                 <LogoBadge />
                 <CastControls code={code} />
                 <SoundControls />
@@ -376,7 +376,7 @@ export default function SpectatorScreen() {
                     </div>
 
                     <div className="flex justify-center order-1 lg:order-2">
-                        <div className="bg-white p-4 lg:p-6 rounded-3xl shadow-2xl shadow-purple-500/20 max-w-[280px] sm:max-w-none">
+                        <div className="bg-white p-4 lg:p-6 rounded-3xl shadow-2xl shadow-indigo-500/10 max-w-[280px] sm:max-w-none">
                             <QRCode value={joinUrl} size={256} className="w-full h-auto sm:w-[400px] sm:h-[400px]" />
                         </div>
                     </div>
@@ -412,7 +412,7 @@ export default function SpectatorScreen() {
         const hasTheme = currentTheme.length > 0;
 
         return (
-            <div className="relative min-h-screen bg-slate-900 text-white flex flex-col p-8">
+            <div className="relative min-h-screen bg-slate-950 text-white flex flex-col p-8">
                 <CastControls code={code} />
                 <SoundControls />
                 <LogoBadge />
@@ -482,7 +482,7 @@ export default function SpectatorScreen() {
                 {/* Question */}
                 <div className="mb-8 lg:mb-12 text-center flex flex-col items-center">
                     {hasTheme && (
-                        <div className="inline-flex items-center gap-2 mb-4 lg:mb-6 rounded-2xl border border-white/20 bg-white/5 px-4 lg:px-6 py-2 text-sm lg:text-lg uppercase tracking-[0.25em] text-purple-100/70">
+                        <div className="inline-flex items-center gap-2 mb-4 lg:mb-6 rounded-2xl border border-white/20 bg-white/5 px-4 lg:px-6 py-2 text-sm lg:text-lg uppercase tracking-[0.25em] text-slate-300">
                             <span className="text-yellow-200 font-semibold tracking-[0.25em]">Theme</span>
                             <span className="text-white/90 font-semibold normal-case tracking-normal">{currentTheme}</span>
                         </div>
@@ -595,7 +595,7 @@ export default function SpectatorScreen() {
     // 🏆 RESULTS VIEW
     if (lobbyState.status === "RESULTS") {
         return (
-            <div className="relative min-h-screen bg-gradient-to-b from-slate-900 to-purple-900 text-white p-8 flex flex-col items-center">
+            <div className="relative min-h-screen bg-gradient-to-b from-slate-950 to-indigo-950 text-white p-8 flex flex-col items-center">
                 <CastControls code={code} />
                 <SoundControls />
                 <LogoBadge />

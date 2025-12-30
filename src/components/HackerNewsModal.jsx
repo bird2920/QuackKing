@@ -27,7 +27,7 @@ export default function HackerNewsModal({ isOpen, onClose }) {
         aria-modal="true"
         aria-labelledby="hn-modal-title"
       >
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-purple-500" />
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-indigo-500" />
         <button
           type="button"
           onClick={() => onClose?.()}

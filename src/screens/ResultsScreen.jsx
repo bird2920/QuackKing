@@ -157,7 +157,7 @@ export default function ResultsScreen({
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white px-4 py-10">
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 pointer-events-none select-none drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
         {!logoFailed ? (
           <img
@@ -172,23 +172,23 @@ export default function ResultsScreen({
       </div>
       <div className="w-full max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-purple-100/70">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-slate-300">
             <span role="img" aria-label="trophy">🏁</span>
             Final Results
           </div>
           <h1 className="text-4xl md:text-5xl font-black">
             Game Over — <span className="text-yellow-300">{gameCode}</span>
           </h1>
-          <p className="text-purple-100/75">Great run! See how everyone stacked up below.</p>
+          <p className="text-slate-400">Great run! See how everyone stacked up below.</p>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)]">
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(99,102,241,0.4)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-purple-100/80">Leaderboard</p>
               <h2 className="text-3xl font-extrabold">Top Players</h2>
             </div>
-            <div className="text-sm text-purple-100/70">
+            <div className="text-sm text-slate-400">
               {sortedPlayers.length} player{sortedPlayers.length === 1 ? "" : "s"} ranked
             </div>
           </div>
@@ -209,10 +209,10 @@ export default function ResultsScreen({
               const cardGradient = isFirst
                 ? "from-yellow-200 via-yellow-400 to-amber-500 text-slate-900"
                 : isSecond
-                ? "from-slate-100/80 via-slate-200/70 to-slate-300/60 text-slate-900"
-                : isThird
-                ? "from-amber-200/60 via-orange-200/50 to-orange-300/50 text-slate-900"
-                : "from-white/10 to-white/5 text-white";
+                  ? "from-slate-100/80 via-slate-200/70 to-slate-300/60 text-slate-900"
+                  : isThird
+                    ? "from-amber-200/60 via-orange-200/50 to-orange-300/50 text-slate-900"
+                    : "from-white/10 to-white/5 text-white";
               const chipBg = isFirst || isSecond || isThird ? "bg-white/30 text-slate-900" : "bg-white/10 text-purple-100";
               return (
                 <div
@@ -256,7 +256,7 @@ export default function ResultsScreen({
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.75)] text-center space-y-3">
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-[0_25px_120px_-35px_rgba(99,102,241,0.4)] text-center space-y-3">
           <h3 className="text-2xl font-bold">Keep this run forever</h3>
           <p className="text-purple-100/80">
             {isSignedIn
@@ -271,14 +271,13 @@ export default function ResultsScreen({
             {saveStatus === "saving"
               ? "Saving..."
               : isSignedIn
-              ? "Save this game"
-              : "Sign up & save"}
+                ? "Save this game"
+                : "Sign up & save"}
           </button>
           {saveMessage && (
             <p
-              className={`text-sm ${
-                saveStatus === "success" ? "text-green-300" : "text-rose-200"
-              }`}
+              className={`text-sm ${saveStatus === "success" ? "text-green-300" : "text-rose-200"
+                }`}
             >
               {saveMessage}
             </p>
@@ -306,7 +305,7 @@ export default function ResultsScreen({
             </button>
           </div>
         ) : (
-          <p className="text-center text-purple-100/75 text-lg">
+          <p className="text-center text-slate-300 text-lg">
             Waiting for the host to start a new round or end the game...
           </p>
         )}

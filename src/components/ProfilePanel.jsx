@@ -151,7 +151,7 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
 
   if (!games?.length) {
     return (
-      <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-purple-100/80">
+      <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-slate-400">
         No saved games yet for this ID. Save your results at the end of a match to see them here.
       </div>
     );
@@ -173,20 +173,20 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
     <div className="mt-4 space-y-4">
       {/* Aggregate Statistics Dashboard */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400">
             Total games
           </p>
           <p className="text-2xl font-bold text-white mt-1">{totalGames}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400">
             Avg score
           </p>
           <p className="text-2xl font-bold text-white mt-1">{avgScore}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400">
             Best rank
           </p>
           <p className="text-2xl font-bold text-white mt-1">
@@ -194,7 +194,7 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-purple-200/70">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400">
             Accuracy
           </p>
           <p className="text-2xl font-bold text-white mt-1">{overallAccuracy}%</p>
@@ -218,11 +218,11 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
           return (
             <div
               key={`${game.gameCode || "game"}-${game.savedAt || index}`}
-              className="flex flex-col gap-2 px-4 py-3 text-sm text-purple-100/85 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 px-4 py-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex flex-1 flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-purple-200/80">
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     {game.gameCode || "Unknown"}
                   </span>
                   {game.placement && (
@@ -231,22 +231,22 @@ function SavedGamesList({ games, userId, status, error, onSelectGame }) {
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] text-purple-300/80">
+                <span className="text-[11px] text-slate-500">
                   {formatDate(game.savedAt)}
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <div className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[11px]">
-                  <span className="uppercase tracking-[0.18em] text-purple-300/80">Score</span>
+                  <span className="uppercase tracking-[0.18em] text-slate-500">Score</span>
                   <span className="font-semibold text-white">{game.score ?? 0}</span>
                 </div>
                 <div className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[11px]">
-                  <span className="uppercase tracking-[0.18em] text-purple-300/80">Accuracy</span>
+                  <span className="uppercase tracking-[0.18em] text-slate-500">Accuracy</span>
                   <span className="font-semibold text-white">{accuracy}</span>
                 </div>
                 <div className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[11px]">
-                  <span className="uppercase tracking-[0.18em] text-purple-300/80">Correct</span>
+                  <span className="uppercase tracking-[0.18em] text-slate-500">Correct</span>
                   <span className="font-semibold text-white">
                     {game.correct ?? 0}/{game.answered ?? 0}
                   </span>
@@ -410,7 +410,7 @@ function GameDetailsSheet({ game, onClose }) {
         <div className="relative px-5 pb-10 pt-5">
           <div className="mb-2 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-purple-200/75">Game</p>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Game</p>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-white/10 px-3 py-1 font-mono text-sm font-semibold text-amber-100">
                   {game.gameCode || "Unknown"}
@@ -419,7 +419,7 @@ function GameDetailsSheet({ game, onClose }) {
                   <span className="text-xs text-amber-200">#{game.placement} place</span>
                 )}
               </div>
-              <p className="mt-1 text-xs text-purple-100/75">{formatDate(game.savedAt)}</p>
+              <p className="mt-1 text-xs text-slate-400">{formatDate(game.savedAt)}</p>
             </div>
             <button
               type="button"
@@ -431,7 +431,7 @@ function GameDetailsSheet({ game, onClose }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm text-purple-100/85">
+          <div className="grid grid-cols-2 gap-3 text-sm text-slate-300">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
               <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Score</p>
               <p className="text-2xl font-bold text-white">{game.score ?? 0}</p>
@@ -441,7 +441,7 @@ function GameDetailsSheet({ game, onClose }) {
               <p className="text-2xl font-bold text-white">{accuracy}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Answered</p>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Answered</p>
               <p className="text-2xl font-bold text-white">
                 {game.correct ?? 0}/{game.answered ?? 0}
               </p>
@@ -454,19 +454,19 @@ function GameDetailsSheet({ game, onClose }) {
             </div>
             {playerName && (
               <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Player</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Player</p>
                 <p className="text-lg font-semibold text-white">{playerName}</p>
               </div>
             )}
             {theme && (
               <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-purple-200/70">Theme</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Theme</p>
                 <p className="text-base font-semibold text-white">{theme}</p>
               </div>
             )}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-purple-100/80">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-400">
             Saved for ID{" "}
             <span className="font-mono text-amber-100">{game.userId || "current session"}</span>
           </div>
@@ -564,11 +564,11 @@ function AccountSection({ auth, authUser, onRequestAccount, userId }) {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/20">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-purple-200/80">Account</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Account</p>
             <h3 className="text-lg font-bold text-white">
               {authUser?.email || (isAnonymous ? "Guest profile" : "Unknown user")}
             </h3>
-            <p className="mt-1 text-xs text-purple-100/80">
+            <p className="mt-1 text-xs text-slate-300">
               {isAnonymous
                 ? "You’re playing as a guest. Upgrade to a full account to keep your games and achievements across devices."
                 : "Signed in. Your saved games and achievements are already attached to this account."}
@@ -607,13 +607,13 @@ function AccountSection({ auth, authUser, onRequestAccount, userId }) {
       <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-inner shadow-black/30 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-purple-200/80">Security</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Security</p>
             <h3 className="text-lg font-bold text-white">Keep this profile yours</h3>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-purple-100/90">Email</label>
+          <label className="text-sm font-semibold text-slate-300">Email</label>
           <input
             type="email"
             value={email}
@@ -630,7 +630,7 @@ function AccountSection({ auth, authUser, onRequestAccount, userId }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-purple-100/90">
+          <label className="text-sm font-semibold text-slate-300">
             {isAnonymous ? "Create a password" : "New password"}
           </label>
           <input
@@ -737,7 +737,7 @@ export default function ProfilePanel({
     >
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none opacity-70 mix-blend-screen">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.18),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.12),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(244,114,182,0.14),transparent_26%)] blur-3xl" />
+        <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.12),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.08),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(124,58,237,0.08),transparent_26%)] blur-3xl" />
       </div>
 
       <div
@@ -746,19 +746,19 @@ export default function ProfilePanel({
         aria-modal="true"
         aria-labelledby="profile-panel-title"
         aria-describedby="profile-panel-description"
-        className="relative w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/95 via-purple-950/85 to-indigo-950/85 p-6 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.85)]"
+        className="relative w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900/90 to-indigo-950/90 p-6 shadow-[0_25px_120px_-35px_rgba(99,102,241,0.4)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-purple-100/80">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-slate-400">
               Profile
             </div>
             <h2 id="profile-panel-title" className="text-3xl font-black text-white">
               Your games, achievements, and access
             </h2>
-            <p id="profile-panel-description" className="text-sm text-purple-100/80">
+            <p id="profile-panel-description" className="text-sm text-slate-300">
               Showing data for ID{" "}
               <span className="font-mono text-amber-100">{userId || "guest"}</span>
             </p>
@@ -815,7 +815,7 @@ export default function ProfilePanel({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${activeTab === tab.id
                 ? "bg-slate-900 text-amber-100 shadow-sm shadow-black/40"
-                : "text-purple-100/80 hover:bg-white/10"
+                : "text-slate-300 hover:bg-white/10"
                 }`}
             >
               {tab.label}
@@ -834,7 +834,7 @@ export default function ProfilePanel({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.25em] text-purple-200/80">
+                  <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
                     Saved games
                   </p>
                   <h3 className="text-lg font-bold text-white">
@@ -869,7 +869,7 @@ export default function ProfilePanel({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.25em] text-purple-200/80">
+                  <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
                     Achievements
                   </p>
                   <h3 className="text-lg font-bold text-white">

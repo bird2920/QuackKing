@@ -18,6 +18,7 @@ export default function HomeScreen({
   onSignOut,
   resumeGameCode,
   resumeScreenName,
+  resumeRole,
   onResumeGame,
   onDismissResume,
   isLoading,
@@ -169,9 +170,9 @@ export default function HomeScreen({
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white">
-      <div className="absolute inset-0 opacity-70 mix-blend-screen pointer-events-none">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_15%_20%,rgba(168,85,247,0.22),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.14),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(244,114,182,0.16),transparent_26%)] blur-3xl" />
+    <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
+      <div className="absolute inset-0 opacity-60 mix-blend-screen pointer-events-none">
+        <div className="h-full w-full bg-[radial-gradient(circle_at_15%_20%,rgba(99,102,241,0.15),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(45,212,191,0.1),transparent_28%),radial-gradient(circle_at_20%_80%,rgba(124,58,237,0.1),transparent_26%)] blur-3xl" />
       </div>
 
       {resumeGameCode && (
@@ -181,7 +182,11 @@ export default function HomeScreen({
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-amber-600">Resume Game</p>
                 <h2 className="text-2xl font-black leading-tight">Resume game {resumeGameCode}</h2>
-                <p className="text-sm text-slate-700">You were hosting this game. Pick an option below.</p>
+                <p className="text-sm text-slate-700">
+                  {resumeRole === "host"
+                    ? "You were hosting this game. Pick an option below."
+                    : "You were playing in this game. Want to jump back in?"}
+                </p>
               </div>
               {onDismissResume && (
                 <button
@@ -226,8 +231,8 @@ export default function HomeScreen({
       <div className="relative z-10 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl space-y-8">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.35em] text-purple-100/70 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.35em] text-slate-400 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               Join or host
             </div>
             <h1 className="flex justify-center">
@@ -236,18 +241,18 @@ export default function HomeScreen({
                   src="/QuackKing.svg"
                   alt="QuackKing logo with crown"
                   onError={() => setLogoFailed(true)}
-                  className="h-14 sm:h-16 drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]"
+                  className="h-14 sm:h-16 drop-shadow-[0_15px_45px_rgba(99,102,241,0.25)]"
                 />
               ) : (
-                <QuackKingLogo className="text-5xl sm:text-6xl font-black tracking-tight drop-shadow-[0_15px_45px_rgba(79,70,229,0.35)]" />
+                <QuackKingLogo className="text-5xl sm:text-6xl font-black tracking-tight drop-shadow-[0_15px_45px_rgba(99,102,241,0.25)]" />
               )}
             </h1>
-            <p className="text-lg sm:text-xl text-purple-100/80 font-semibold">
+            <p className="text-lg sm:text-xl text-slate-200 font-semibold">
               Jump into a live party with a 4-letter code, or spin up your own lobby in seconds.
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-[0_25px_120px_-35px_rgba(124,58,237,0.8)] border border-white/10 space-y-6">
+          <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-[0_25px_120px_-35px_rgba(99,102,241,0.4)] border border-white/10 space-y-6">
             {localError && (
               <p className="text-rose-200 text-center font-semibold text-sm bg-rose-500/20 border border-rose-300/40 rounded-xl px-4 py-2">
                 {localError}
@@ -256,19 +261,19 @@ export default function HomeScreen({
 
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-purple-100/80">Your Name</label>
+                <label className="block text-sm font-semibold text-slate-300">Your Name</label>
                 <input
                   ref={nameInputRef}
                   type="text"
                   value={screenName}
                   onChange={(e) => setScreenName(e.target.value.slice(0, 15))}
                   placeholder="Max 15 characters"
-                  className="w-full p-3.5 rounded-2xl bg-white/10 border border-white/10 text-white placeholder:text-purple-100/50 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
+                  className="w-full p-3.5 rounded-2xl bg-white/10 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-purple-100/80">Game Code</label>
+                <label className="block text-sm font-semibold text-slate-300">Game Code</label>
                 <div className="flex justify-between gap-2">
                   {codeDigits.map((digit, index) => (
                     <input
@@ -320,13 +325,13 @@ export default function HomeScreen({
               </button>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-3 text-sm text-purple-100/70">
+            <div className="grid sm:grid-cols-3 gap-3 text-sm text-slate-400">
               <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-center">1) Pick a name</div>
               <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-center">2) Enter or share the code</div>
               <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-center">3) Battle for bragging rights</div>
             </div>
 
-            <div className="text-center text-sm text-purple-100/70">
+            <div className="text-center text-sm text-slate-400">
               {authUser && !authUser.isAnonymous ? (
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <span>Signed in as {authUser.email || "QuackKing player"}</span>

@@ -110,11 +110,11 @@ export function useGameLogic(
 
     // 🔄 Auto-resume if we have a cached session (helps mobile users returning mid-game)
     useEffect(() => {
-            if (!db || !userId || gameCode || pendingResume) return;
-            // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
-            if (resumeGuardCode) return;
-            const cached = readPersistedSession();
-            if (!cached || cached.userId !== userId || !cached.gameCode) return;
+        if (!db || !userId || gameCode || pendingResume) return;
+        // If the user followed a fresh invite link (prefilled code), do NOT auto-resume an old game.
+        if (resumeGuardCode) return;
+        const cached = readPersistedSession();
+        if (!cached || cached.userId !== userId || !cached.gameCode) return;
 
         let isCancelled = false;
         (async () => {
@@ -149,18 +149,12 @@ export function useGameLogic(
 
                 if (isCancelled) return;
 
-                // Hosts get a prompt to resume; players auto-resume as before.
-                if (cached.role === "host") {
-                    setPendingResume({
-                        role: "host",
-                        gameCode: cached.gameCode,
-                        screenName: cached.screenName || "",
-                    });
-                    return;
-                }
-
-                setGameCode(cached.gameCode);
-                // Mode will be updated once the snapshot listener fires
+                // All users now get a prompt to resume instead of auto-joined.
+                setPendingResume({
+                    role: cached.role,
+                    gameCode: cached.gameCode,
+                    screenName: cached.screenName || "",
+                });
             } catch (err) {
                 console.warn("Failed to auto-resume session:", err);
             }

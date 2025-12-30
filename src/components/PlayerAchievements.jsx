@@ -15,9 +15,9 @@ export default function PlayerAchievements({ playerId, recentAchievements = [] }
   const toggleExpanded = () => setExpanded((prev) => !prev);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-3 text-xs text-purple-100/70 space-y-2">
+    <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-3 text-xs text-slate-400 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-purple-200/70">
+        <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-slate-400">
           <span role="img" aria-label="achievements">
             🏆
           </span>
@@ -58,10 +58,10 @@ export default function PlayerAchievements({ playerId, recentAchievements = [] }
                 {achievement.label}
               </p>
               {achievement.description && (
-                <p className="text-xs text-purple-100/70 mt-1">{achievement.description}</p>
+                <p className="text-xs text-slate-400 mt-1">{achievement.description}</p>
               )}
               {achievement.unlockedAt && (
-                <p className="text-[0.6rem] uppercase tracking-[0.3em] text-purple-200/70 mt-2">
+                <p className="text-[0.6rem] uppercase tracking-[0.25em] text-slate-500 mt-2">
                   {new Date(achievement.unlockedAt).toLocaleString()}
                 </p>
               )}

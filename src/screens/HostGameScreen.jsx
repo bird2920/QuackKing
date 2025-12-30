@@ -310,10 +310,10 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
   const timeColor = timeRemaining <= 10 ? "text-red-500 animate-pulse" : "text-yellow-400";
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col items-center">
       {/* Header */}
       <div className="w-full max-w-4xl mb-6">
-        <h2 className="text-3xl font-extrabold text-purple-400 mb-2 text-center">
+        <h2 className="text-3xl font-extrabold text-slate-300 mb-2 text-center">
           Host Controls — {gameCode}
         </h2>
         <p className="text-center text-gray-400">
@@ -325,7 +325,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       <div className={`text-6xl font-black mb-6 ${timeColor}`}>{timeRemaining}s</div>
 
       {/* Question */}
-      <div className="w-full max-w-4xl bg-gray-800 p-8 rounded-2xl shadow-2xl mb-6">
+      <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl p-8 rounded-2xl border border-white/10 shadow-2xl shadow-indigo-950/40 mb-6">
         <h2 className="text-3xl font-bold mb-6 text-center break-words">
           {currentQuestion.question}
         </h2>
@@ -365,7 +365,7 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
       </div>
 
       {/* Players Answered Status */}
-      <div className="w-full max-w-4xl bg-gray-800 p-6 rounded-xl shadow-2xl mb-6">
+      <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl p-6 rounded-xl border border-white/10 shadow-2xl shadow-indigo-950/40 mb-6">
         <h3 className="text-xl font-bold mb-4">
           Players Answered: {playersWhoAnswered.size} / {players.filter((p) => !p.isHost).length}
         </h3>
@@ -378,8 +378,8 @@ export default function HostGameScreen({ db, gameCode, lobbyState, players, curr
                 <div
                   key={p.id}
                   className={`p-2 rounded text-sm font-medium text-center ${hasAnswered
-                      ? "bg-green-700 text-white"
-                      : "bg-gray-700 text-gray-400"
+                    ? "bg-green-700 text-white"
+                    : "bg-gray-700 text-gray-400"
                     }`}
                 >
                   {p.name} {hasAnswered && "✓"}

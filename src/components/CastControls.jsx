@@ -78,7 +78,7 @@ export default function CastControls({ code }) {
                     onClick={() => setShowMenu(!showMenu)}
                     className={`
                     bg-slate-800/80 backdrop-blur-md hover:bg-slate-700/80 text-white rounded-full p-2 shadow-lg border border-white/10 transition-all
-                    ${showMenu ? 'bg-slate-700 ring-2 ring-purple-500/50' : ''}
+                    ${showMenu ? 'bg-slate-700 ring-2 ring-indigo-500/50' : ''}
                 `}
                     title="Share & Cast"
                 >
@@ -158,12 +158,12 @@ export default function CastControls({ code }) {
 
                         <div className="space-y-4 text-slate-300">
                             <p>To cast this screen to your Apple TV or AirPlay-compatible TV:</p>
-                            <ol className="list-decimal pl-5 space-y-2 marker:text-purple-400">
+                            <ol className="list-decimal pl-5 space-y-2 marker:text-indigo-400">
                                 <li>Open <strong>Control Center</strong> on your device.</li>
                                 <li>Tap the <span className="inline-flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded text-xs border border-white/10"><svg className="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M12 16L7 21H17L12 16ZM4 3C2.89 3 2 3.89 2 5V15C2 16.1 2.89 17 4 17H8L12 13L16 17H20C21.1 17 22 16.1 22 15V5C22 3.89 21.1 3 20 3H4ZM4 5.01H20V15H4V5.01Z" /></svg> Screen Mirroring</span> icon.</li>
                                 <li>Select your TV from the list.</li>
                             </ol>
-                            <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-3 text-sm text-purple-200 flex items-start gap-2">
+                            <div className="bg-indigo-900/20 border border-indigo-500/20 rounded-lg p-3 text-sm text-indigo-200 flex items-start gap-2">
                                 <span className="text-lg">📱</span>
                                 <p>For the best experience, <strong>rotate your device to landscape</strong> to fill the TV screen.</p>
                             </div>
@@ -195,12 +195,12 @@ export default function CastControls({ code }) {
 
                         <div className="space-y-4 text-slate-300">
                             <p>Use Chrome's built-in casting to mirror this tab:</p>
-                            <ol className="list-decimal pl-5 space-y-2 marker:text-purple-400">
+                            <ol className="list-decimal pl-5 space-y-2 marker:text-indigo-400">
                                 <li>Open the <strong>Chrome menu</strong> (⋮) and choose <strong>Cast…</strong></li>
                                 <li>Click <strong>Sources</strong> and select <strong>Cast tab</strong></li>
                                 <li>Pick your TV to start mirroring</li>
                             </ol>
-                            <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-3 text-sm text-purple-200 flex items-start gap-2">
+                            <div className="bg-indigo-900/20 border border-indigo-500/20 rounded-lg p-3 text-sm text-indigo-200 flex items-start gap-2">
                                 <span className="text-lg">💡</span>
                                 <p>If you see a black screen with a cast icon, stop casting and use <strong>Cast tab</strong> instead of "Cast via app".</p>
                             </div>

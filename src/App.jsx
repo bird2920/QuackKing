@@ -128,6 +128,7 @@ function TriviaGame({ prefillFromRoute }) {
         onSignOut={handleSignOut}
         resumeGameCode={pendingResume?.gameCode}
         resumeScreenName={pendingResume?.screenName}
+        resumeRole={pendingResume?.role}
         onResumeGame={resumeCachedSession}
         onDismissResume={dismissPendingResume}
         isLoading={isLoading}

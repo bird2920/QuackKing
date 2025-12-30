@@ -480,7 +480,7 @@ export default function LobbyScreen({
   }, [db, gameCode]);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-900 text-white px-4 py-10">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white px-4 py-10">
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 pointer-events-none select-none drop-shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
         {!logoFailed ? (
           <img
@@ -516,9 +516,9 @@ export default function LobbyScreen({
       </div>
       <div className="w-full max-w-6xl mx-auto space-y-8">
         <div className="text-center space-y-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-purple-200/70">Game Lobby</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Game Lobby</p>
           {hostName && (
-            <p className="text-sm text-purple-100/70">Hosted by {hostName}</p>
+            <p className="text-sm text-slate-300">Hosted by {hostName}</p>
           )}
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <h2 className="text-4xl md:text-5xl font-extrabold">
@@ -567,12 +567,12 @@ export default function LobbyScreen({
           <div className="space-y-6">
             {isHost ? (
               <>
-                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-purple-900/30">
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 space-y-4 shadow-2xl shadow-indigo-950/40">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.35em] text-purple-200/80">Share + Spectate</p>
+                      <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Share + Spectate</p>
                       <h4 className="text-2xl font-semibold mt-1">Invite players first</h4>
-                      <p className="text-sm text-purple-100/70">
+                      <p className="text-sm text-slate-300">
                         Share the link and launch TV mode before you dive into questions.
                       </p>
                     </div>
@@ -581,16 +581,16 @@ export default function LobbyScreen({
                   <div className="pt-2">
                     <button
                       onClick={() => window.open(`/#/spectator/${gameCode}`, "_blank")}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-purple-400/30 bg-purple-500/10 px-4 py-3 font-bold text-purple-200 transition hover:bg-purple-500/20 hover:border-purple-400/50"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-indigo-400/20 bg-indigo-500/5 px-4 py-3 font-bold text-indigo-200 transition hover:bg-indigo-500/10 hover:border-indigo-400/40"
                     >
                       <span className="text-xl">📺</span> Launch TV Mode (QR)
                     </button>
-                    <p className="text-center text-xs text-purple-300/50 mt-2">
+                    <p className="text-center text-xs text-slate-500 mt-2">
                       Opens the spectator screen with the QR code.
                     </p>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-purple-900/30">
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-2xl shadow-indigo-950/40">
                   <div className="p-6 space-y-6">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -599,19 +599,19 @@ export default function LobbyScreen({
                           Question Tools
                         </p>
                         <h3 className="text-2xl font-bold mt-2">Generate questions first</h3>
-                        <p className="text-sm text-purple-100/70">
+                        <p className="text-sm text-slate-300">
                           AI is the fastest way. Swap tabs if you need a CSV drop-in instead.
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-purple-200/70">Loaded</p>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Loaded</p>
                         <p className="text-lg font-bold text-yellow-200">
                           {questionCount} {questionCount === 1 ? "question" : "questions"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 rounded-full bg-white/5 p-1 text-xs text-purple-100/80">
+                    <div className="flex flex-wrap gap-2 rounded-full bg-white/5 p-1 text-xs text-slate-300">
                       {[
                         { id: "ai", label: "AI Generation" },
                         { id: "csv", label: "CSV Manual Entry" },
@@ -620,11 +620,10 @@ export default function LobbyScreen({
                           key={tab.id}
                           type="button"
                           onClick={() => setQuestionTab(tab.id)}
-                          className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${
-                            questionTab === tab.id
+                          className={`flex-1 rounded-full px-3 py-1.5 font-semibold transition ${questionTab === tab.id
                               ? "bg-slate-900 text-amber-100 shadow-sm shadow-black/40"
                               : "text-purple-100/80 hover:bg-white/10"
-                          }`}
+                            }`}
                         >
                           {tab.label}
                         </button>
@@ -930,10 +929,10 @@ export default function LobbyScreen({
                               max="120"
                               value={lobbyState?.timerSettings?.revealTime ?? 30}
                               onChange={(e) => {
-                                  const val = parseInt(e.target.value, 10);
-                                  if (!isNaN(val)) {
-                                    const gameDocRef = getGameDocPath(db, gameCode);
-                                    updateDoc(gameDocRef, { "timerSettings.revealTime": val, lastHostActivity: Date.now() });
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) {
+                                  const gameDocRef = getGameDocPath(db, gameCode);
+                                  updateDoc(gameDocRef, { "timerSettings.revealTime": val, lastHostActivity: Date.now() });
 
                                   // Persist to user profile
                                   if (userId) {
@@ -963,10 +962,10 @@ export default function LobbyScreen({
                               max="60"
                               value={lobbyState?.timerSettings?.nextQuestionTime ?? 3}
                               onChange={(e) => {
-                                  const val = parseInt(e.target.value, 10);
-                                  if (!isNaN(val)) {
-                                    const gameDocRef = getGameDocPath(db, gameCode);
-                                    updateDoc(gameDocRef, { "timerSettings.nextQuestionTime": val, lastHostActivity: Date.now() });
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) {
+                                  const gameDocRef = getGameDocPath(db, gameCode);
+                                  updateDoc(gameDocRef, { "timerSettings.nextQuestionTime": val, lastHostActivity: Date.now() });
 
                                   // Persist to user profile
                                   if (userId) {
